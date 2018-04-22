@@ -1,4 +1,4 @@
-module Hurl.Data.Model(Pattern(..), SymbolRef, patternCata) where
+module FunCheck.Data.Model(Pattern(..), SymbolRef, patternCata) where
 
 {-
 data RequestTemplate
