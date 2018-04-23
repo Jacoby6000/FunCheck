@@ -4,9 +4,6 @@ import FunCheck.Model
 import Control.Monad.State
 import Data.Functor.Foldable
 
-
-
-generateData :: Pattern a -> (PatternF String a -> a) -> a
-generateData a alg = cata alg a
-
+generateData :: Pattern a -> (PatternF a b -> b) -> b
+generateData pat alg = cata alg pat
 

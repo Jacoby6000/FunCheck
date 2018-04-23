@@ -24,3 +24,4 @@ newtype Symbol = Symbol String
   deriving(Show)
 
 makeBaseFunctor ''Pattern
+
