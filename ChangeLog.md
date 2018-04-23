@@ -1,4 +1,4 @@
-# Revision history for hurl
+# Revision history for FunCheck
 
 ## 0.1.0.0  -- YYYY-mm-dd
 
