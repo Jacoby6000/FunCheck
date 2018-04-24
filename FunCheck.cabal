@@ -17,8 +17,8 @@ cabal-version:       >=1.10
 
 executable FunCheck
   main-is:             Main.hs
-  other-modules:       FunCheck.Data.Model,
-                       FunCheck.Data.Parse
+  other-modules:       FunCheck.Model,
+                       FunCheck.Generate
   -- other-extensions:
   build-depends:       base >=4.10 && <4.11,
                        mtl >=2.2 && <2.3,

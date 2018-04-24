@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell, KindSignatures, TypeFamilies #-}
 {-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable #-}
 
-module FunCheck.Data.Model(Pattern(..), Symbol) where
+module FunCheck.Model(Pattern(..), PatternF(..), Symbol) where
 
 import Data.Functor.Foldable
 import Data.Functor.Foldable.TH
@@ -18,8 +18,9 @@ data Pattern a
   | Or [Pattern a]
   | Var Symbol
   | Let Symbol (Pattern a)
+  deriving(Show)
 
 newtype Symbol = Symbol String
-
+  deriving(Show)
 
 makeBaseFunctor ''Pattern

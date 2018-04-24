@@ -1,7 +1,6 @@
 module Main where
 
-import FunCheck.Data.Model
-import FunCheck.Data.Parse
+import FunCheck.Model
 
 main :: IO ()
 main = putStrLn "Hello, Haskell!"
