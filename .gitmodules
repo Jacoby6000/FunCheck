@@ -1,0 +1,3 @@
+[submodule "libs/yaya"]
+	path = libs/yaya
+	url = git@github.com:sellout/yaya
