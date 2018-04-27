@@ -42,10 +42,10 @@ instance Foldable Template where
   foldr _ z (DecRange _ _) = z
   foldr f z (Optional   a) = f a z
   foldr f z (Repeat a _ _) = f a z
-  foldr f z (And         as) = foldr f z as
-  foldr f z (Or          as) = foldr f z as
-  foldr _ z (Var          s) = z
-  foldr f z (Let sym      a) = f a z
+  foldr f z (And       as) = foldr f z as
+  foldr f z (Or        as) = foldr f z as
+  foldr _ z (Var        s) = z
+  foldr f z (Let sym    a) = f a z
 
 
   foldMap f = foldr (\a b -> mappend (f a) b) mempty
