@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell, TypeOperators #-}
 {-# LANGUAGE FlexibleContexts, DeriveFunctor #-}
+{-# LANGUAGE DeriveTraversable, DeriveAnyClass #-}
 
 module FunCheck.Model(Template(..), Symbol) where
 
@@ -18,23 +19,10 @@ data Template a
   | Or [a]
   | Var Symbol
   | Let Symbol a
-  deriving(Show)
-
+  deriving(Show, Functor, Traversable)
 
 newtype Symbol = Symbol String
   deriving(Show)
-
-instance Functor Template where
-  fmap _ (Lit          s) = Lit s
-  fmap _ (IntRange mn mx) = IntRange mn mx
-  fmap _ (DecRange mn mx) = DecRange mn mx
-  fmap f (Optional     a) = Optional (f a)
-  fmap f (Repeat a mn mx) = Repeat (f a) mn mx
-  fmap f (And         as) = And $ f <$> as
-  fmap f (Or          as) = Or $ f <$> as
-  fmap _ (Var          s) = Var s
-  fmap f (Let sym      a) = Let sym (f a)
-
 
 instance Foldable Template where
   foldr _ z (Lit        _) = z
@@ -48,4 +36,3 @@ instance Foldable Template where
   foldr f z (Let sym    a) = f a z
 
 
-  foldMap f = foldr (\a b -> mappend (f a) b) mempty
