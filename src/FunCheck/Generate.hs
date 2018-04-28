@@ -5,12 +5,13 @@
 module FunCheck.Generate(cataState, monoidalStepAlgebra, Env(..)) where
 
 import Control.Monad.State.Lazy
+import Control.Lens
+import Data.Foldable
+import Data.Map.Lazy
+import FunCheck.Model
 import System.Random
 import Yaya.Control
 import Yaya
-import FunCheck.Model
-import Data.Map.Lazy
-import Control.Lens
 
 data Env g a = Env { _randomGen :: g , _bindings :: Map Symbol a } deriving(Show, Eq)
 makeLenses ''Env
@@ -34,8 +35,8 @@ monoidalStepAlgebra f _ _ _ (IntRange  mn mx) = f <$> randomRange (mn, mx)
 monoidalStepAlgebra _ f _ _ (DecRange  mn mx) = f <$> randomRange (mn, mx)
 monoidalStepAlgebra _ _ f _ (CharRange mn mx) = f . (: []) <$> randomRange (mn, mx)
 monoidalStepAlgebra _ _ _ _ (Optional a     ) = (\b -> if b then a else mempty) <$> randomResult
-monoidalStepAlgebra _ _ _ _ (Repeat a mn mx ) = foldMap id <$> flip replicate a <$> randomRange (mn, mx)
-monoidalStepAlgebra _ _ _ _ (And as         ) = pure $ foldMap id as
+monoidalStepAlgebra _ _ _ _ (Repeat a mn mx ) = foldMap id . flip replicate a <$> randomRange (mn, mx)
+monoidalStepAlgebra _ _ _ _ (And as         ) = pure $ fold as
 monoidalStepAlgebra _ _ _ _ (Or  as         ) = randomChoice as
 monoidalStepAlgebra _ _ _ _ (Var sym        ) = uses bindings (findWithDefault mempty sym)
 monoidalStepAlgebra _ _ _ _ (Let sym a      ) = mempty <$ (bindings %= (insert sym a))
