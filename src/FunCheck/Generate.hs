@@ -52,8 +52,5 @@ randomResult = generator %%= random
 randomChoice :: (RandomGen g, HasGen g (Env g a), MonadState (Env g a) m) => [r] -> m r
 randomChoice rs = (!!) rs <$> randomRange (0, length rs - 1)
 
-withMonadState :: MonadState s m => (s -> s) -> m a -> m a
-withMonadState f m = modify f >> m
-
 class HasGen g s | s -> g where
   generator :: Lens' s g
