@@ -23,7 +23,11 @@ executable FunCheck
   build-depends:       base >=4.9 && <4.11,
                        mtl >=2.2 && <2.3,
                        random >=1.0,
-                       yaya
+                       lens >=4.16,
+                       containers >=0.5,
+                       yaya,
+                       yaya-unsafe
 
   hs-source-dirs:      src
   default-language:    Haskell2010
+  ghc-options:         -Wall
