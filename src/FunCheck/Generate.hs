@@ -34,7 +34,7 @@ monoidalStepAlgebra _ _ _ f (Lit t          ) = pure $ f t
 monoidalStepAlgebra f _ _ _ (IntRange  mn mx) = f <$> randomRange (mn, mx)
 monoidalStepAlgebra _ f _ _ (DecRange  mn mx) = f <$> randomRange (mn, mx)
 monoidalStepAlgebra _ _ f _ (CharRange mn mx) = f . (: []) <$> randomRange (mn, mx)
-monoidalStepAlgebra _ _ _ _ (Optional a     ) = (\b -> if b then a else mempty) <$> randomResult
+monoidalStepAlgebra _ _ _ _ (Optional a     ) = (\b -> if b then a else mempty) <$> (generator %%= random)
 monoidalStepAlgebra _ _ _ _ (Repeat a mn mx ) = foldMap id . flip replicate a <$> randomRange (mn, mx)
 monoidalStepAlgebra _ _ _ _ (And as         ) = pure $ fold as
 monoidalStepAlgebra _ _ _ _ (Or  as         ) = randomChoice as
@@ -43,9 +43,6 @@ monoidalStepAlgebra _ _ _ _ (Let sym a      ) = mempty <$ (bindings %= (insert s
 
 randomRange :: (RandomGen g, Random r, HasGen g (Env g a), MonadState (Env g a) m) => (r, r) -> m r
 randomRange x = generator %%= randomR x
-
-randomResult :: (RandomGen g, Random r, HasGen g (Env g a), MonadState (Env g a) m) => m r
-randomResult = generator %%= random
 
 randomChoice :: (RandomGen g, HasGen g (Env g a), MonadState (Env g a) m) => [r] -> m r
 randomChoice rs = (!!) rs <$> randomRange (0, length rs - 1)
