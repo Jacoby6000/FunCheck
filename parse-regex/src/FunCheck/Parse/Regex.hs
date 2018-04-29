@@ -1,4 +1,4 @@
-module FunCheck.Parse.Regex(TemplateTok(..), Choose(..), SpecialChar(..), specialChar) where
+module FunCheck.Parse.Regex(Regex(..), Choose(..), SpecialChar(..), specialChar, choose) where
 
 import Control.Applicative
 import Data.Attoparsec.Text (Parser)
@@ -9,9 +9,15 @@ import qualified Data.Attoparsec.Text as A
 -- import qualified Data.Attoparsec.Combinator as AC
 import qualified Data.Text as T
 
-data TemplateTok
-  = LitTok String
-  | OneOfTok [Choose]
+data Regex
+  = Lit String
+  | OneOf [Choose]
+  | NotOneOf [Choose]
+  | CapureGroup Regex
+  | Special SpecialChar
+  | Optional Regex
+  | Or Regex Regex
+  | And Regex Regex
   deriving(Show, Eq)
 
 data Choose
@@ -38,6 +44,18 @@ data SpecialChar
  | OctalEscape Char
  | HexadecimalEscape Char
   deriving(Show, Eq)
+
+regex :: Parser Regex
+regex =
+  oneOf <|> notOneOf <|> captureGroup <|> special <|> or <|> and <|> optional <|> lit
+
+choose :: Parser Choose
+choose =
+  chooseSpecialChar <|> chooseCharRange <|> chooseOneChar
+  where
+    chooseSpecialChar = (ChooseSpecialChar <$> specialChar)
+    chooseCharRange = (ChooseCharRange <$> A.anyChar <* constParse id "-" <*> A.anyChar)
+    chooseOneChar = (ChooseOneChar <$> A.anyChar)
 
 specialChar :: Parser SpecialChar
 specialChar =
