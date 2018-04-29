@@ -12,11 +12,13 @@ import qualified Data.Text as T
 data TemplateTok
   = LitTok String
   | OneOfTok [Choose]
+  deriving(Show, Eq)
 
 data Choose
  = ChooseOneChar Char
  | ChooseCharRange Char Char
  | ChooseSpecialChar SpecialChar
+  deriving(Show, Eq)
 
 data SpecialChar
  = Whitespace
@@ -35,6 +37,7 @@ data SpecialChar
  | NullEscape
  | OctalEscape Char
  | HexadecimalEscape Char
+  deriving(Show, Eq)
 
 specialChar :: Parser SpecialChar
 specialChar =
