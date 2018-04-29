@@ -50,13 +50,9 @@ regex = allButLit <|> lit
  where
   notOneOf = NotOneOf <$> parseAllWithin "[^" choose "]"
   oneOf = OneOf <$> parseAllWithin "[" choose "]"
-  captureGroup = parseWithin "(" regex ")"
-  orParser = Or <$> regex <* constParse () "|" <*> regex
-  andParser = And <$> regex <*> regex
-  opt = Optional <$> regex <* (constParse () "?")
   special = Special <$> specialChar
 
-  allButLit = notOneOf <|> oneOf <|> captureGroup <|> special <|> orParser <|> andParser <|> opt
+  allButLit = notOneOf <|> oneOf <|> special
   lit = Lit <$> A.manyTill A.anyChar allButLit
 
 choose :: Parser Choose
@@ -111,8 +107,8 @@ constParse a s = A.asciiCI (T.pack s) *> pure a
 parseAllWithin :: String -> Parser a -> String -> Parser [a]
 parseAllWithin start parser end = constParse () start *> A.manyTill parser (constParse () end)
 
-parseWithin :: String -> Parser a -> String -> Parser a
-parseWithin start parser end = constParse () start *> parser <* constParse () end
+-- parseWithin :: String -> Parser a -> String -> Parser a
+-- parseWithin start parser end = constParse () start *> parser <* constParse () end
 
 -- constsParse :: a -> NonEmpty String -> Parser a
 -- constsParse a (h :| t) = foldr ((<|>) . constParse a) (constParse a h) t

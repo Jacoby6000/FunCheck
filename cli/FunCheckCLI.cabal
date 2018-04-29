@@ -32,9 +32,11 @@ executable FunCheckCLI
                        attoparsec >=0.13,
                        scientific >=0.3,
                        text >=1.2,
+                       bytestring >=0.10,
                        yaya,
                        yaya-unsafe,
-                       FunCheck
+                       FunCheck,
+                       FunCheckParseRegex
 
   default-language:    Haskell2010
   ghc-options:         -Wall
