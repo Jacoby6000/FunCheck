@@ -38,10 +38,14 @@ resolver: lts-9.6
 packages:
 - core
 - cli
-- libs/yaya/core
-- libs/yaya/optics
-- libs/yaya/hedgehog
-- libs/yaya/unsafe
+- location: libs/yaya/core
+  extra-dep: true
+- location: libs/yaya/optics
+  extra-dep: true
+- location: libs/yaya/hedgehog
+  extra-dep: true
+- location: libs/yaya/unsafe
+  extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
