@@ -3,6 +3,7 @@ module FunCheck.Parse.Regex(Regex(..), Choose(..), SpecialChar(..), specialChar,
 import Control.Applicative
 import Data.Attoparsec.Text (Parser)
 import Data.Char
+import Data.Functor
 
 import qualified Data.Attoparsec.Text as A
 -- import qualified Data.Attoparsec.Combinator as AC
@@ -102,7 +103,7 @@ specialChar =
 
 
 constParse :: a -> String -> Parser a
-constParse a s = A.asciiCI (T.pack s) *> pure a
+constParse a s = A.asciiCI (T.pack s) $> a
 
 parseAllWithin :: String -> Parser a -> String -> Parser [a]
 parseAllWithin start parser end = constParse () start *> A.manyTill parser (constParse () end)
