@@ -18,6 +18,7 @@ language: generic
 cache:
   directories:
   - $HOME/.stack
+  - .stack-work
 
 # Ensure necessary system libraries are present
 addons:
@@ -38,6 +39,10 @@ before_install:
 install:
 # Build dependencies
 - stack --no-terminal --install-ghc test --only-dependencies
+
+after_install:
+- stack clean
+- rm -rf .stack-work/logs
 
 script:
 # Build the package, its tests, and its docs and run the tests
