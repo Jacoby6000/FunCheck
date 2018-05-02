@@ -5,17 +5,16 @@ import Data.Attoparsec.Text (Parser)
 import Data.Char
 import Data.Functor
 
-import qualified Data.Attoparsec.Text as A
-import qualified Data.Attoparsec.Combinator as AC
+import Data.Attoparsec.Text
 import qualified Data.Text as T
 
 data Regex
-  = Lit String
+  = Lit Char
   | StartAnchor
   | EndAnchor
   | OneOf [Choose]
   | NotOneOf [Choose]
-  | CapureGroup Regex
+  | CaptureGroup [Regex]
   | Special SpecialChar
   | Optional Regex
   | Or Regex Regex
@@ -48,29 +47,32 @@ data SpecialChar
  | EscapedChar Char
   deriving(Show, Eq)
 
-checkSeperator :: Parser Char
-checkSeperator = AC.lookAhead $ A.choice (A.char <$> ['(', '[', ']', ')', '?', '|'])
+checkSeperator :: Parser ()
+checkSeperator = endOfInput
 
 regex :: Parser Regex
-regex = And <$> AC.manyTill parseRegexAtoms AC.endOfInput
+regex = combine <$> many1 parseRegexAtoms
+ where
+  combine (h:[]) = h
+  combine (h:t) = And (h:t)
 
 parseRegexAtoms :: Parser Regex
 parseRegexAtoms = startAnchor <|> endAnchor <|> notOneOf <|> oneOf <|> captureGroup <|> special <|> lit
  where
   notOneOf = NotOneOf <$> parseAllWithin "[^" choose "]"
   oneOf = OneOf <$> parseAllWithin "[" choose "]"
-  captureGroup = parseWithin "(" regex ")"
+  captureGroup = CaptureGroup <$> parseAllWithin "(" regex ")"
   special = Special <$> specialChar
-  lit = Lit <$> A.manyTill A.anyChar checkSeperator
-  startAnchor = A.char '^' $> StartAnchor
-  endAnchor = A.char '$' $> EndAnchor
+  lit = Lit <$> anyChar
+  startAnchor = char '^' $> StartAnchor
+  endAnchor = char '$' $> EndAnchor
 
 choose :: Parser Choose
 choose = chooseSpecialChar <|> chooseCharRange <|> chooseOneChar
  where
   chooseSpecialChar = ChooseSpecialChar <$> specialChar
-  chooseCharRange   = ChooseCharRange <$> A.anyChar <* A.char '-' <*> A.anyChar
-  chooseOneChar     = ChooseOneChar <$> A.anyChar
+  chooseCharRange   = ChooseCharRange <$> anyChar <* char '-' <*> anyChar
+  chooseOneChar     = ChooseOneChar <$> anyChar
 
 specialChar :: Parser SpecialChar
 specialChar =
@@ -107,17 +109,20 @@ specialChar =
   alert             = constParse Alert "\\a"
   nullEscape        = constParse NullEscape "\0"
   octalEscape       = OctalEscape <$> (constParse () "\\" *> error "not implemented")
-  hexadecimalEscape = HexadecimalEscape <$> chr <$> (constParse () "\\" *> A.hexadecimal)
-  escapedChar       = EscapedChar <$> (constParse () "\\" *> A.anyChar)
+  hexadecimalEscape = HexadecimalEscape . chr <$> (constParse () "\\" *> hexadecimal)
+  escapedChar       = EscapedChar <$> (constParse () "\\" *> anyChar)
 
 
 constParse :: a -> String -> Parser a
-constParse a s = A.asciiCI (T.pack s) $> a
+constParse a s = string (T.pack s) $> a
+
+parseUntil :: Parser a -> Parser b -> Parser [a]
+parseUntil parser til = (:) <$> parser <*> manyTill parser til
 
 parseAllWithin :: String -> Parser a -> String -> Parser [a]
-parseAllWithin start parser end = constParse () start *> A.many1 parser <* constParse () end
+parseAllWithin start parser end = (string $ T.pack start) *> manyTill parser (string $ T.pack end)
 
 parseWithin :: String -> Parser a -> String -> Parser a
-parseWithin start parser end = constParse () start *> parser <* constParse () end
+parseWithin start parser end = (string $ T.pack start) *> parser <* (string $ T.pack end)
 
 
