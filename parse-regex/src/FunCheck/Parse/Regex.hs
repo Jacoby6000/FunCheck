@@ -11,6 +11,8 @@ import qualified Data.Text as T
 
 data Regex
   = Lit String
+  | StartAnchor
+  | EndAnchor
   | OneOf [Choose]
   | NotOneOf [Choose]
   | CapureGroup Regex
@@ -53,13 +55,15 @@ regex :: Parser Regex
 regex = And <$> AC.manyTill parseRegexAtoms AC.endOfInput
 
 parseRegexAtoms :: Parser Regex
-parseRegexAtoms = notOneOf <|> oneOf <|> captureGroup <|> special <|> lit
+parseRegexAtoms = startAnchor <|> endAnchor <|> notOneOf <|> oneOf <|> captureGroup <|> special <|> lit
  where
   notOneOf = NotOneOf <$> parseAllWithin "[^" choose "]"
   oneOf = OneOf <$> parseAllWithin "[" choose "]"
   captureGroup = parseWithin "(" regex ")"
   special = Special <$> specialChar
   lit = Lit <$> A.manyTill A.anyChar checkSeperator
+  startAnchor = A.char '^' $> StartAnchor
+  endAnchor = A.char '$' $> EndAnchor
 
 choose :: Parser Choose
 choose = chooseSpecialChar <|> chooseCharRange <|> chooseOneChar
