@@ -9,7 +9,7 @@ import Yaya.Unsafe.Data
 main :: IO ()
 main = do
   gen    <- getStdGen
-  result <- cataState (monoidalStepAlgebra show show id id) (Env gen empty) template
+  result <- cataState (monoidalStepRandomGenAlgebra show show id id) (Env gen empty) template
   putStrLn result
 
 template :: Fix (Template String)

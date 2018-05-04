@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module FunCheck.Generate(cataState, monoidalStepAlgebra, Env(..)) where
+module FunCheck.Generate(cataState, monoidalStepRandomGenAlgebra, Env(..)) where
 
 import Control.Monad.State.Lazy
 import Control.Lens
@@ -22,7 +22,7 @@ instance HasGen g (Env g a) where
 cataState :: (Traversable m, Recursive f m, Monad n) => AlgebraM (StateT s n) m a -> s -> f -> n a
 cataState alg s fm = evalStateT (cataM alg fm) s
 
-monoidalStepAlgebra
+monoidalStepRandomGenAlgebra
   :: (RandomGen g, Monoid a, MonadState (Env g a) m)
   => (Int -> a)
   -> (Double -> a)
@@ -30,16 +30,16 @@ monoidalStepAlgebra
   -> (t -> a)
   -> Template t a
   -> m a
-monoidalStepAlgebra _ _ _ f (Lit t          ) = pure $ f t
-monoidalStepAlgebra f _ _ _ (IntRange  mn mx) = f <$> randomRange (mn, mx)
-monoidalStepAlgebra _ f _ _ (DecRange  mn mx) = f <$> randomRange (mn, mx)
-monoidalStepAlgebra _ _ f _ (CharRange mn mx) = f . (: []) <$> randomRange (mn, mx)
-monoidalStepAlgebra _ _ _ _ (Optional a     ) = (\b -> if b then a else mempty) <$> (generator %%= random)
-monoidalStepAlgebra _ _ _ _ (Repeat a mn mx ) = foldMap id . flip replicate a <$> randomRange (mn, mx)
-monoidalStepAlgebra _ _ _ _ (And as         ) = pure $ fold as
-monoidalStepAlgebra _ _ _ _ (Or  as         ) = randomChoice as
-monoidalStepAlgebra _ _ _ _ (Var sym        ) = uses bindings (findWithDefault mempty sym)
-monoidalStepAlgebra _ _ _ _ (Let sym a      ) = mempty <$ (bindings %= (insert sym a))
+monoidalStepRandomGenAlgebra _ _ _ f (Lit t          ) = pure $ f t
+monoidalStepRandomGenAlgebra f _ _ _ (IntRange  mn mx) = f <$> randomRange (mn, mx)
+monoidalStepRandomGenAlgebra _ f _ _ (DecRange  mn mx) = f <$> randomRange (mn, mx)
+monoidalStepRandomGenAlgebra _ _ f _ (CharRange mn mx) = f . (: []) <$> randomRange (mn, mx)
+monoidalStepRandomGenAlgebra _ _ _ _ (Optional a     ) = (\b -> if b then a else mempty) <$> (generator %%= random)
+monoidalStepRandomGenAlgebra _ _ _ _ (Repeat a mn mx ) = foldMap id . flip replicate a <$> randomRange (mn, mx)
+monoidalStepRandomGenAlgebra _ _ _ _ (And as         ) = pure $ fold as
+monoidalStepRandomGenAlgebra _ _ _ _ (Or  as         ) = randomChoice as
+monoidalStepRandomGenAlgebra _ _ _ _ (Var sym        ) = uses bindings (findWithDefault mempty sym)
+monoidalStepRandomGenAlgebra _ _ _ _ (Let sym a      ) = mempty <$ (bindings %= (insert sym a))
 
 randomRange :: (RandomGen g, Random r, HasGen g (Env g a), MonadState (Env g a) m) => (r, r) -> m r
 randomRange x = generator %%= randomR x

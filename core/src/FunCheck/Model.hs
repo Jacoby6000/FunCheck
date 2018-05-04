@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, TypeOperators #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts, DeriveFunctor #-}
 {-# LANGUAGE DeriveTraversable, DeriveFoldable #-}
 
