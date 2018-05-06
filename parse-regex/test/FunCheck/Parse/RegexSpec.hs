@@ -28,6 +28,10 @@ spec = do
         testParser regex "(x)" `shouldBe` (Right $ CaptureGroup (Lit "x"))
       it "Can parse a Special" $ do
         testParser regex "\\b" `shouldBe` (Right $ Special Backspace)
+      it "Can parse an Or" $ do
+        testParser regex "a|b" `shouldBe` (Right $ Or[Lit "a", Lit "b"])
+      it "Can parse a non-trivial expression" $ do
+        testParser regex "([a-z ])|\\d" `shouldBe` (Right $ Or[CaptureGroup (OneOf [ChooseCharRange 'a' 'z', ChooseOneChar ' ']), Special Number])
 
 testParser :: Parsec String () a -> String -> Either ParseError a
 testParser parser s = parse parser "test" s

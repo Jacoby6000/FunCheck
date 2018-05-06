@@ -22,7 +22,7 @@ data Regex
   | CaptureGroup Regex
   | Repeat Int (Maybe Int) Bool Regex
   | Special SpecialChar
-  | Or Regex Regex
+  | Or [Regex]
   | And [Regex]
   deriving(Show, Eq)
 
@@ -53,18 +53,24 @@ data SpecialChar
   deriving(Show, Eq)
 
 regex :: (Stream s m Char) => ParsecT s u m Regex
-regex = choice [try captureGroup, try startAnchor, try endAnchor, try notOneOf, oneOf, special, lit] <?> "Regex"
+regex =  reduce <$> choice [or, try captureGroup, try startAnchor, try endAnchor, try notOneOf, oneOf, special, try lit] <?> "Regex"
  where
+  reduce (And [a]) = a
+  reduce (Or [a]) = a
+  reduce a = a
+
   brackets    = between (char '[') (char ']')
   parens      = between (char '(') (char ')')
-  validChar   = noneOf ")"
+  validChar   = noneOf ")|"
+  allButOr    = choice [try captureGroup, try startAnchor, try endAnchor, try notOneOf, oneOf, special, lit]
 
   startAnchor = char '^' $> StartAnchor <?> "Start Anchor"
   endAnchor   = char '$' $> EndAnchor <?> "End Anchor"
   oneOf       = OneOf <$> brackets (many1 choose) <?> "One Of"
   notOneOf    = NotOneOf <$> brackets (char '^' *> many1 choose) <?> "Not One Of"
   captureGroup = CaptureGroup <$> parens regex <?> "Capture Group"
-  special     = Special <$> specialChar
+  special     = Special <$> specialChar <?> "Special"
+  or          = Or <$> sepBy1 allButOr (char '|') <?> "Or"
   lit         = Lit <$> many1 validChar <?> "Lit"
 
 
@@ -138,4 +144,5 @@ instance Monoid Regex where
   mappend (And l) (And r) = And (l ++ r)
   mappend (And l) r       = And (l ++ [r])
   mappend l       (And r) = And (l : r)
+  mappend (Or l) (Or r) = Or (l ++ r)
   mappend l r             = And (l:[r])
