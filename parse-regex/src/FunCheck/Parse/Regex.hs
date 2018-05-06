@@ -1,10 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 module FunCheck.Parse.Regex
-  ( Regex(..)
-  , Choose(..)
-  , SpecialChar(..)
-  , specialChar
+  (specialChar
   , choose
   , regex
   )
@@ -12,48 +9,10 @@ where
 
 import           Text.Parsec             hiding ( oneOf )
 import           Data.Functor
-
-data Regex
-  = Lit String
-  | StartAnchor
-  | EndAnchor
-  | OneOf [Choose]
-  | NotOneOf [Choose]
-  | CaptureGroup Regex
-  | Repeat Int (Maybe Int) Bool Regex
-  | Special SpecialChar
-  | Or [Regex]
-  | And [Regex]
-  deriving(Show, Eq)
-
-data Choose
- = ChooseOneChar Char
- | ChooseCharRange Char Char
- | ChooseSpecialChar SpecialChar
-  deriving(Show, Eq)
-
-data SpecialChar
- = Whitespace
- | Number
- | AlphaNumeric
- | Slash
- | Tab
- | VerticalTab
- | CR
- | LF
- | CRLF
- | Escape
- | Backspace
- | FormFeed
- | Alert
- | NullEscape
- | OctalEscape Char
- | HexadecimalEscape Char
- | EscapedChar Char
-  deriving(Show, Eq)
+import FunCheck.Data.Regex
 
 regex :: (Stream s m Char) => ParsecT s u m Regex
-regex =  reduce <$> choice [or, try captureGroup, try startAnchor, try endAnchor, try notOneOf, oneOf, special, try lit] <?> "Regex"
+regex =  reduce <$> choice [try or, try captureGroup, try startAnchor, try endAnchor, try notOneOf, oneOf, special, lit] <?> "Regex"
  where
   reduce (And [a]) = a
   reduce (Or [a]) = a
@@ -61,11 +20,11 @@ regex =  reduce <$> choice [or, try captureGroup, try startAnchor, try endAnchor
 
   brackets    = between (char '[') (char ']')
   parens      = between (char '(') (char ')')
-  validChar   = noneOf ")|"
-  allButOr    = choice [try captureGroup, try startAnchor, try endAnchor, try notOneOf, oneOf, special, lit]
+  validChar   = noneOf "()|^$[]"
+  allButOr    = choice [try captureGroup, startAnchor, try endAnchor, try notOneOf, oneOf, special, lit]
 
-  startAnchor = char '^' $> StartAnchor <?> "Start Anchor"
-  endAnchor   = char '$' $> EndAnchor <?> "End Anchor"
+  startAnchor = StartAnchor <$> (char '^' *> regex)
+  endAnchor   = EndAnchor <$> regex <* char '$'
   oneOf       = OneOf <$> brackets (many1 choose) <?> "One Of"
   notOneOf    = NotOneOf <$> brackets (char '^' *> many1 choose) <?> "Not One Of"
   captureGroup = CaptureGroup <$> parens regex <?> "Capture Group"
@@ -122,7 +81,6 @@ specialChar = choice
   hexadecimalEscape = HexadecimalEscape <$> (string "\\" *> hexDigit)
   escapedChar       = EscapedChar <$> (string "\\" *> anyChar)
 
-
 constParse :: (Stream s m Char) => a -> String -> ParsecT s u m a
 constParse a s = string s $> a
 
@@ -137,12 +95,3 @@ parseAllWithin start parser end = startParse *> manyTill parser endParse
 
 parseWithin :: (Stream s m Char) => String -> ParsecT s u m a -> String -> ParsecT s u m a
 parseWithin start parser end = string start *> parser <* string end
-
-instance Monoid Regex where
-  mempty = And []
-
-  mappend (And l) (And r) = And (l ++ r)
-  mappend (And l) r       = And (l ++ [r])
-  mappend l       (And r) = And (l : r)
-  mappend (Or l) (Or r) = Or (l ++ r)
-  mappend l r             = And (l:[r])

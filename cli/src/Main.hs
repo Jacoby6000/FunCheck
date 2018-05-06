@@ -1,6 +1,6 @@
 module Main where
 
-import FunCheck.Model
+import FunCheck.Data.Template
 import FunCheck.Generate
 import System.Random
 import Data.Map.Lazy

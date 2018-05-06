@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleContexts, DeriveFunctor #-}
 {-# LANGUAGE DeriveTraversable, DeriveFoldable #-}
 
-module FunCheck.Model(Template(..), Symbol(..)) where
+module FunCheck.Data.Template(Template(..), Symbol(..)) where
 
 data Template t a
   = Lit t

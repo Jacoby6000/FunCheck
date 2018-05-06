@@ -16,7 +16,9 @@ extra-source-files:  ../ChangeLog.md, ../README.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     FunCheck.Parse.Regex
+  exposed-modules:     FunCheck.Parse.Regex,
+                       FunCheck.Data.Regex
+
   -- other-extensions:
   build-depends:       base >=4.9 && <4.11,
                        mtl >=2.2 && <2.3,

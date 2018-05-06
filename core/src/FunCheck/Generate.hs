@@ -8,7 +8,7 @@ import Control.Monad.State.Lazy
 import Control.Lens
 import Data.Foldable
 import Data.Map.Lazy
-import FunCheck.Model
+import FunCheck.Data.Template
 import System.Random
 import Yaya.Control
 import Yaya
