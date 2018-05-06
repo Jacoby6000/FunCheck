@@ -1,8 +1,10 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module FunCheck.Parse.RegexSpec(main, spec) where
 
 import Test.Hspec
 import FunCheck.Parse.Regex
-import Data.Attoparsec.Text
+import Text.Parsec
 import Data.Text
 
 main :: IO ()
@@ -23,8 +25,7 @@ spec = do
       it "Can parse a NotOneOf" $ do
         testParser regex "[^x]" `shouldBe` (Right $ NotOneOf [ChooseOneChar 'x'])
       it "Can parse a CaptureGroup" $ do
-        testParser regex "(x)" `shouldBe` (Right $ CaptureGroup [(Lit 'x')])
+        testParser regex "(x)" `shouldBe` (Right $ CaptureGroup (Lit 'x'))
 
-
-testParser :: Parser a -> String -> Either String a
-testParser parser s = parseOnly parser (pack s)
+testParser :: Parsec String () a -> String -> Either ParseError a
+testParser parser s = parse parser "test" s

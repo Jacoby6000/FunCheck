@@ -1,11 +1,13 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module FunCheck.Parse.Regex(Regex(..), Choose(..), SpecialChar(..), specialChar, choose, regex) where
 
 import Control.Applicative
-import Data.Attoparsec.Text (Parser)
+import Text.Parsec hiding ((<|>))
+import Text.ParserCombinators.Parsec.Char
 import Data.Char
 import Data.Functor
 
-import Data.Attoparsec.Text
 import qualified Data.Text as T
 
 data Regex
@@ -14,7 +16,8 @@ data Regex
   | EndAnchor
   | OneOf [Choose]
   | NotOneOf [Choose]
-  | CaptureGroup [Regex]
+  | CaptureGroup Regex
+  | Repeat Int (Maybe Int) Regex
   | Special SpecialChar
   | Optional Regex
   | Or Regex Regex
@@ -47,52 +50,42 @@ data SpecialChar
  | EscapedChar Char
   deriving(Show, Eq)
 
-checkSeperator :: Parser ()
-checkSeperator = endOfInput
-
-regex :: Parser Regex
-regex = combine <$> many1 parseRegexAtoms
+regex :: (Stream s m Char) => ParsecT s u m Regex
+regex = oneOf <|> notOneOf
  where
-  combine (h:[]) = h
-  combine (h:t) = And (h:t)
+  brackets = between (char '[') (char ']')
+  oneOf = OneOf <$> (brackets $ many1 choose)
+  notOneOf = NotOneOf <$> (brackets $ (char '^' *> many1 choose))
 
-parseRegexAtoms :: Parser Regex
-parseRegexAtoms = startAnchor <|> endAnchor <|> notOneOf <|> oneOf <|> captureGroup <|> special <|> lit
- where
-  notOneOf = NotOneOf <$> parseAllWithin "[^" choose "]"
-  oneOf = OneOf <$> parseAllWithin "[" choose "]"
-  captureGroup = CaptureGroup <$> parseAllWithin "(" regex ")"
-  special = Special <$> specialChar
-  lit = Lit <$> anyChar
-  startAnchor = char '^' $> StartAnchor
-  endAnchor = char '$' $> EndAnchor
 
-choose :: Parser Choose
-choose = chooseSpecialChar <|> chooseCharRange <|> chooseOneChar
+choose ::(Stream s m Char) =>  ParsecT s u m Choose
+choose = choice [chooseSpecialChar, chooseCharRange, chooseOneChar]
  where
   chooseSpecialChar = ChooseSpecialChar <$> specialChar
   chooseCharRange   = ChooseCharRange <$> anyChar <* char '-' <*> anyChar
   chooseOneChar     = ChooseOneChar <$> anyChar
 
-specialChar :: Parser SpecialChar
+specialChar ::(Stream s m Char) =>  ParsecT s u m SpecialChar
 specialChar =
-  whitespace
-    <|> number
-    <|> alphaNumeric
-    <|> slash
-    <|> tab
-    <|> verticalTab
-    <|> cr
-    <|> lf
-    <|> crlf
-    <|> escape
-    <|> backspace
-    <|> formFeed
-    <|> alert
-    <|> nullEscape
-    <|> octalEscape
-    <|> hexadecimalEscape
-    <|> escapedChar
+  choice [
+    whitespace,
+    number,
+    alphaNumeric,
+    slash,
+    tab,
+    verticalTab,
+    cr,
+    lf,
+    crlf,
+    escape,
+    backspace,
+    formFeed,
+    alert,
+    nullEscape,
+    octalEscape,
+    hexadecimalEscape,
+    escapedChar
+  ]
  where
   whitespace        = constParse Whitespace "\\s"
   number            = constParse Number "\\d"
@@ -108,21 +101,31 @@ specialChar =
   formFeed          = constParse FormFeed "\\f"
   alert             = constParse Alert "\\a"
   nullEscape        = constParse NullEscape "\0"
-  octalEscape       = OctalEscape <$> (constParse () "\\" *> error "not implemented")
-  hexadecimalEscape = HexadecimalEscape . chr <$> (constParse () "\\" *> hexadecimal)
-  escapedChar       = EscapedChar <$> (constParse () "\\" *> anyChar)
+  octalEscape       = OctalEscape <$> (string "\\" *> error "not implemented")
+  hexadecimalEscape = HexadecimalEscape <$> (string "\\" *> hexDigit)
+  escapedChar       = EscapedChar <$> (string "\\" *> anyChar)
 
 
-constParse :: a -> String -> Parser a
-constParse a s = string (T.pack s) $> a
+constParse ::(Stream s m Char) =>  a -> String -> ParsecT s u m a
+constParse a s = string s $> a
 
-parseUntil :: Parser a -> Parser b -> Parser [a]
+parseUntil :: (Stream s m Char) => ParsecT s u m a -> ParsecT s u m b -> ParsecT s u m [a]
 parseUntil parser til = (:) <$> parser <*> manyTill parser til
 
-parseAllWithin :: String -> Parser a -> String -> Parser [a]
-parseAllWithin start parser end = (string $ T.pack start) *> manyTill parser (string $ T.pack end)
+parseAllWithin :: (Stream s m Char) => String -> ParsecT s u m a -> String -> ParsecT s u m [a]
+parseAllWithin start parser end = startParse *> manyTill parser endParse
+ where
+  startParse = string $  start
+  endParse   = string $  end
 
-parseWithin :: String -> Parser a -> String -> Parser a
-parseWithin start parser end = (string $ T.pack start) *> parser <* (string $ T.pack end)
+parseWithin :: (Stream s m Char) => String -> ParsecT s u m a -> String -> ParsecT s u m a
+parseWithin start parser end = string start *> parser <* string end
 
+instance Monoid Regex where
+  mempty = And []
+
+  mappend (And l) (And r) = And (l ++ r)
+  mappend (And l) r       = And (l ++ [r])
+  mappend l       (And r) = And (l : r)
+  mappend l r             = And (l:[r])
 
