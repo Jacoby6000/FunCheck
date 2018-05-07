@@ -3,83 +3,67 @@
 module FunCheck.Parse.Regex
   (specialChar
   , choose
-  , regex
+  , regexTerm
   )
 where
 
 import           Text.Parsec             hiding ( oneOf )
 import           Data.Functor
 import FunCheck.Data.Regex
+import Text.ParserCombinators.Parsec.Expr
 
 regex :: (Stream s m Char) => ParsecT s u m Regex
-regex =  reduce <$> choice [try or, try captureGroup, try startAnchor, try endAnchor, try notOneOf, oneOf, special, lit] <?> "Regex"
+regex = error "foo"
  where
-  reduce (And [a]) = a
-  reduce (Or [a]) = a
-  reduce a = a
+  term = buildExpressionParser ops atom where
 
-  brackets    = between (char '[') (char ']')
-  parens      = between (char '(') (char ')')
-  validChar   = noneOf "()|^$[]"
-  allButOr    = choice [try captureGroup, startAnchor, try endAnchor, try notOneOf, oneOf, special, lit]
+  ops = [ [ Postfix $ Repeat 0 Nothing False <$ string "*?"
+					, Postfix $ Repeat 0 Nothing True <$ char '*'
+          , Postfix $ Repeat 1 Nothing False <$ string "+?"
+          , Postfix $ Repeat 1 Nothing True <$ char '+'
+          , Postfix $ Repeat 0 Just 1  <$ char '?'
+          ]
+        , [ Infix (return sequence) AssocRight
+          ]
+        , [ Infix (choice <$ char '|') AssocRight
+          ]
 
-  startAnchor = StartAnchor <$> (char '^' *> regex)
-  endAnchor   = EndAnchor <$> regex <* char '$'
-  oneOf       = OneOf <$> brackets (many1 choose) <?> "One Of"
-  notOneOf    = NotOneOf <$> brackets (char '^' *> many1 choose) <?> "Not One Of"
-  captureGroup = CaptureGroup <$> parens regex <?> "Capture Group"
-  special     = Special <$> specialChar <?> "Special"
-  or          = Or <$> sepBy1 allButOr (char '|') <?> "Or"
-  lit         = Lit <$> many1 validChar <?> "Lit"
-
+regexTerm :: (Stream s m Char) => ParsecT s u m RegexTerm
+regexTerm = choice [try wildcard, try notOneOf, try oneOf, literal]
+ where
+  brackets = between (char '[') (char ']')
+  oneOf = Set True <$> brackets (many1 choose)
+  notOneOf = Set False <$> brackets (char '^' *> many1 choose)
+  wildcard = char '.' $> Wildcard
+  literal = Literal <$> regexLiteral
 
 choose :: (Stream s m Char) => ParsecT s u m Choose
-choose = choice [try chooseSpecialChar, try chooseCharRange, chooseOneChar] <?> "Choose"
+choose = choice [try chooseCharRange, chooseOneChar] <?> "Choose"
  where
-  notEnd = noneOf "]"
+  chooseCharRange   = ChooseCharRange <$> anyChar <* char '-' <*> anyChar <?> "Choose Char Range"
+  chooseOneChar     = ChooseLiteral <$> regexLiteral <?> "Choose One Char"
 
-  chooseSpecialChar = ChooseSpecialChar <$> specialChar <?> "Choose Special Char"
-  chooseCharRange   = ChooseCharRange <$> notEnd <* char '-' <*> notEnd <?> "Choose Char Range"
-  chooseOneChar     = ChooseOneChar <$> notEnd <?> "Choose One Char"
+regexLiteral :: (Stream s m Char) => ParsecT s u m RegexLiteral
+regexLiteral = choice [try regexSpecialChar, try regexEscape, regexChar]
+ where
+  regexSpecialChar = RegexSpecialChar <$> specialChar
+  regexEscape = RegexEscape <$> (char '\\' *> anyChar)
+  regexChar = RegexChar <$> noneOf "\\[]()*?+"
 
 specialChar :: (Stream s m Char) => ParsecT s u m SpecialChar
 specialChar = choice
   [ try whitespace
   , try number
   , try alphaNumeric
-  , try slash
-  , try tab
-  , try verticalTab
-  , try cr
-  , try lf
-  , try crlf
-  , try escape
-  , try backspace
-  , try formFeed
-  , try alert
-  , try nullEscape
   , try octalEscape
   , try hexadecimalEscape
-  , escapedChar
   ] <?> "Special Char"
  where
   whitespace        = constParse Whitespace "\\s"
   number            = constParse Number "\\d"
   alphaNumeric      = constParse Whitespace "\\w"
-  slash             = constParse Slash "\\B"
-  tab               = constParse Tab "\\t"
-  verticalTab       = constParse VerticalTab "\\v"
-  cr                = constParse CR "\\r"
-  lf                = constParse LF "\\n"
-  crlf              = constParse CRLF "\\R"
-  escape            = constParse Escape "\\e"
-  backspace         = constParse Backspace "\\b"
-  formFeed          = constParse FormFeed "\\f"
-  alert             = constParse Alert "\\a"
-  nullEscape        = constParse NullEscape "\0"
   octalEscape       = OctalEscape <$> (string "\\" *> error "not implemented")
   hexadecimalEscape = HexadecimalEscape <$> (string "\\" *> hexDigit)
-  escapedChar       = EscapedChar <$> (string "\\" *> anyChar)
 
 constParse :: (Stream s m Char) => a -> String -> ParsecT s u m a
 constParse a s = string s $> a
