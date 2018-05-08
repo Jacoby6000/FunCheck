@@ -15,18 +15,42 @@ import Text.ParserCombinators.Parsec.Expr
 regex :: (Stream s m Char) => ParsecT s u m Regex
 regex = error "foo"
  where
-  term = buildExpressionParser ops atom where
+  term = buildExpressionParser ops regexTerm where
 
-  ops = [ [ Postfix $ Repeat 0 Nothing False <$ string "*?"
-					, Postfix $ Repeat 0 Nothing True <$ char '*'
-          , Postfix $ Repeat 1 Nothing False <$ string "+?"
-          , Postfix $ Repeat 1 Nothing True <$ char '+'
-          , Postfix $ Repeat 0 Just 1  <$ char '?'
+  greedyStar = Repeat True 0 Nothing <$ char '*'
+  star       = Repeat False 0 Nothing <$ string "*?"
+  greedyPlus = Repeat True 1 Nothing <$ char '+'
+  plus       = Repeat False 1 Nothing <$ string "+?"
+
+  _greedyRepeatRange :: (Stream s m Char) => ParsecT s u m (Int -> Int -> a)
+  _greedyRepeatRange =
+    (char '{' *> (digitToInt <$> many1 digit))
+    <*> (optionMaybe $ char ',' *> many1 digit)
+    <* char '}'
+
+  greedyRepeatRange = RepeatRange True <$> _greedyRepeatRange
+  repeatRange = RepeatRange False <$> (_greedyRepeatRange <* char '?')
+
+  ops = [ [ postfix $ greedyStar
+					, postfix $ star
+          , postfix $ greedyPlus
+          , postfix $ plus
+          , postfix $ greedyRepeatRange
+          , postfix $ repeatRange
           ]
-        , [ Infix (return sequence) AssocRight
+        , [ Infix (Concat <$> regexTerm ++ regexTerm) AssocRight
           ]
-        , [ Infix (choice <$ char '|') AssocRight
+        , [ binary "|" Or AssocRight
           ]
+        , [ prefix "^" StartAnchor
+          , postfix "$" EndAnchor
+          ]
+        ]
+
+
+  binary  name fun assoc = Infix (do{ string name; return fun }) assoc
+  prefix  name fun       = Prefix (do{ string name; return fun })
+  postfix name fun       = Postfix (do{ string name; return fun })
 
 regexTerm :: (Stream s m Char) => ParsecT s u m RegexTerm
 regexTerm = choice [try wildcard, try notOneOf, try oneOf, literal]

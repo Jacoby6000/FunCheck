@@ -9,8 +9,8 @@ where
 
 data Regex
   = Term RegexTerm
-  | Repeat Int (Maybe Int) Bool Regex
-  | Or Regex Regex
+  | Repeat Bool Int (Maybe Int) Bool Regex
+  | Union Regex Regex
   | Group Regex
   | Concat Regex Regex
   | StartAnchor Regex

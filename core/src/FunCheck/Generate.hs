@@ -40,6 +40,7 @@ monoidalStepRandomGenAlgebra _ _ _ _ (And as         ) = pure $ fold as
 monoidalStepRandomGenAlgebra _ _ _ _ (Or  as         ) = randomChoice as
 monoidalStepRandomGenAlgebra _ _ _ _ (Var sym        ) = uses bindings (findWithDefault mempty sym)
 monoidalStepRandomGenAlgebra _ _ _ _ (Let sym a      ) = mempty <$ (bindings %= (insert sym a))
+monoidalStepRandomGenAlgebra _ _ _ _ (App a template ) = error "Not implemented. srry :("
 
 randomRange :: (RandomGen g, Random r, HasGen g (Env g a), MonadState (Env g a) m) => (r, r) -> m r
 randomRange x = generator %%= randomR x

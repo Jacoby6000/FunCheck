@@ -14,6 +14,7 @@ data Template t a
   | And [a]
   | Or [a]
   | Var Symbol
+  | App a (Template t a)
   | Let Symbol a
   deriving(Show, Functor, Foldable, Traversable)
 
