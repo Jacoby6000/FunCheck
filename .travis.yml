@@ -36,6 +36,11 @@ git:
 before_install:
 - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
 - git submodule update --init --recursive
+- cabal sandbox init
+- cabal sandbox add-source libs/yaya/core/
+- cabal sandbox add-source libs/yaya/unsafe
+- cabal sandbox add-source libs/yaya/hedgehog
+- cabal sandbox add-source libs/yaya/optics
 
 install:
 - cabal install --only-dependencies --enable-tests
