@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators, RankNTypes #-}
 {-# LANGUAGE FlexibleContexts, DeriveFunctor #-}
 {-# LANGUAGE DeriveTraversable, DeriveFoldable #-}
 
@@ -6,21 +6,25 @@ module FunCheck.Data.Template
   ( Template(..)
   , Symbol(..)
   )
-where
+    where
 
-data Template t a
-  = Lit t
-  | IntRange Int Int
-  | DecRange Double Double
-  | CharRange Char Char
-  | Optional a
-  | Repeat a Int Int
-  | And a a
-  | Or [a]
-  | Var Symbol
-  | Let Symbol a
---  | App (Template t a) a
-  deriving(Show, Functor, Foldable, Traversable)
+import Data.List.NonEmpty
+import Control.Applicative
+
+data RegexTemplate f = RegexTemplate {
+  _repeat :: forall a. (Maybe Int, Maybe Int) -> f a -> f [a],
+  _oneOf :: forall a. [f a] -> f a,
+  _lit :: forall a. a -> f a,
+  _chain :: forall a. f a -> f a -> f a
+}
+
+plus :: Applicative f => f a -> RegexTemplate f -> f (NonEmpty a)
+plus fa t = (:|) <$> fa <*> _repeat t (Nothing, Nothing) fa
+
+
+star :: f a -> RegexTemplate f -> f [a]
+star fa t = _repeat t (Nothing, Nothing) fa
+
 
 newtype Symbol = Symbol String
   deriving(Show, Eq, Ord)

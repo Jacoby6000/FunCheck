@@ -16,8 +16,7 @@ extra-source-files:  ChangeLog.md, README.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     FunCheck.Data.Template,
-                       FunCheck.Generate
+  exposed-modules:     FunCheck.Data.Template
   -- other-extensions:
   build-depends:       base >=4.9 && <4.11,
                        mtl >=2.2 && <2.3,
@@ -27,6 +26,7 @@ library
                        parsec >=3.1,
                        scientific >=0.3,
                        text >=1.2,
+                       QuickCheck >=2.11,
                        yaya,
                        yaya-unsafe
 
