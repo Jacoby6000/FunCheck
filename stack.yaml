@@ -38,7 +38,7 @@ resolver: lts-11.7
 packages:
 - core
 - cli
-- parse-regex
+- regex
 - location: libs/yaya/core
   extra-dep: true
 - location: libs/yaya/optics

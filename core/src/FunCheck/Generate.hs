@@ -4,14 +4,18 @@
 
 module FunCheck.Generate(cataState, monoidalStepRandomGenAlgebra, Env(..)) where
 
-import Control.Monad.State.Lazy
-import Control.Lens
 import Data.Foldable
 import Data.Map.Lazy
-import FunCheck.Data.Template
+
+import Control.Monad.State.Lazy
+
 import System.Random
-import Yaya.Control
+
 import Yaya
+import Yaya.Control
+
+import qualified Control.Lens as L
+
 
 data Env g a = Env { _randomGen :: g , _bindings :: Map Symbol a } deriving(Show, Eq)
 makeLenses ''Env
