@@ -4,17 +4,14 @@
 
 module FunCheck.Generate(cataState, monoidalStepRandomGenAlgebra, Env(..)) where
 
-import Data.Foldable
 import Data.Map.Lazy
-
 import Control.Monad.State.Lazy
-
 import System.Random
-
 import Yaya
 import Yaya.Control
+import Control.Lens
 
-import qualified Control.Lens as L
+import FunCheck.Data.Template
 
 
 data Env g a = Env { _randomGen :: g , _bindings :: Map Symbol a } deriving(Show, Eq)
@@ -40,15 +37,15 @@ monoidalStepRandomGenAlgebra _ f _ _ (DecRange  mn mx) = f <$> randomRange (mn, 
 monoidalStepRandomGenAlgebra _ _ f _ (CharRange mn mx) = f . (: []) <$> randomRange (mn, mx)
 monoidalStepRandomGenAlgebra _ _ _ _ (Optional a     ) = (\b -> if b then a else mempty) <$> (generator %%= random)
 monoidalStepRandomGenAlgebra _ _ _ _ (Repeat a mn mx ) = foldMap id . flip replicate a <$> randomRange (mn, mx)
-monoidalStepRandomGenAlgebra _ _ _ _ (And as         ) = pure $ fold as
+monoidalStepRandomGenAlgebra _ _ _ _ (And l r        ) = pure $ mappend l r
 monoidalStepRandomGenAlgebra _ _ _ _ (Or  as         ) = randomChoice as
 monoidalStepRandomGenAlgebra _ _ _ _ (Var sym        ) = uses bindings (findWithDefault mempty sym)
 monoidalStepRandomGenAlgebra _ _ _ _ (Let sym a      ) = mempty <$ (bindings %= (insert sym a))
 
-randomRange :: (RandomGen g, Random r, HasGen g (Env g a), MonadState (Env g a) m) => (r, r) -> m r
+randomRange :: (RandomGen g, Random r, MonadState (Env g a) m) => (r, r) -> m r
 randomRange x = generator %%= randomR x
 
-randomChoice :: (RandomGen g, HasGen g (Env g a), MonadState (Env g a) m) => [r] -> m r
+randomChoice :: (RandomGen g, MonadState (Env g a) m) => [r] -> m r
 randomChoice rs = (!!) rs <$> randomRange (0, length rs - 1)
 
 class HasGen g s | s -> g where
