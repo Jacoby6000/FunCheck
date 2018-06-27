@@ -3,22 +3,26 @@
 
 module FunCheck.Data.TemplateAlg
   ( RegularDataTemplateAlg(..)
+  , plus
+  , star
+  , chainAll
   )
 where
 
 import           Data.List.NonEmpty
-import           Control.Applicative
 
 data RegularDataTemplateAlg f = RegularDataTemplate {
-  _repeat :: forall a. (Maybe Int, Maybe Int) -> f a -> f [a],
-  _oneOf :: forall a. [f a] -> f a,
-  _lit :: forall a. a -> f a,
-  _chain :: forall a. f a -> f a -> f a
+  repeatN :: forall a. (Maybe Int, Maybe Int) -> f a -> f [a],
+  oneOf :: forall a. [f a] -> f a,
+  lit :: forall a. a -> f a,
+  chain :: forall a. f a -> f a -> f a
 }
 
-_plus :: Applicative f => RegularDataTemplateAlg f -> f a -> f (NonEmpty a)
-_plus t fa = (:|) <$> fa <*> _repeat t (Nothing, Nothing) fa
+plus :: Applicative f => RegularDataTemplateAlg f -> f a -> f (NonEmpty a)
+plus t fa = (:|) <$> fa <*> repeatN t (Nothing, Nothing) fa
 
+star :: RegularDataTemplateAlg f -> f a -> f [a]
+star t = repeatN t (Nothing, Nothing)
 
-_star :: RegularDataTemplateAlg f -> f a -> f [a]
-_star t = _repeat t (Nothing, Nothing)
+chainAll :: RegularDataTemplateAlg f -> f a -> [f a] -> f a
+chainAll t = foldl (chain t)
