@@ -16,7 +16,7 @@ extra-source-files:  ChangeLog.md, README.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     FunCheck.Data.Template
+  exposed-modules:     FunCheck.Data.TemplateAlg
   -- other-extensions:
   build-depends:       base >=4.9 && <4.11,
                        mtl >=2.2 && <2.3,
