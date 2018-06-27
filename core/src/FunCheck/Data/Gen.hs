@@ -37,10 +37,9 @@ data RandomOutputAlgConfig = RandomOutputAlgConfig {
   _maxRepeat :: Int
 }
 
-randomOutputAlg
-  :: (MonadState g f, Alt f, RandomGen g)
-  => RandomOutputAlgConfig
-  -> RegularDataTemplateAlg f
+randomOutputAlg :: (MonadState g f, Alt f, RandomGen g)
+                => RandomOutputAlgConfig
+                -> RegularDataTemplateAlg f
 randomOutputAlg conf = RegularDataTemplate
   { repeatN = repeatN'
   , oneOf   = oneOf'
@@ -55,8 +54,10 @@ randomOutputAlg conf = RegularDataTemplate
   maxRep :: Int
   maxRep = _maxRepeat conf
 
-  repeatN'
-    :: (MonadState g f, RandomGen g) => (Maybe Int, Maybe Int) -> f a -> f [a]
+  repeatN' :: (MonadState g f, RandomGen g)
+           => (Maybe Int, Maybe Int)
+           -> f a
+           -> f [a]
   repeatN' range fa =
     let rangeWithDefaults = bimap (fromMaybe minRep) (fromMaybe maxRep) range
     in  state (randomR rangeWithDefaults) >>= flip replicateM fa
