@@ -26,6 +26,7 @@ library
                        mtl >=2.2 && <2.3,
                        random >=1.0,
                        lens >=4.16,
+                       charset >=0.3,
                        containers >=0.5,
                        parsec >=3.1,
                        scientific >=0.3,

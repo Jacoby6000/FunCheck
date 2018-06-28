@@ -2,8 +2,8 @@
 {-# LANGUAGE FlexibleContexts, ScopedTypeVariables #-}
 
 module FunCheck.Data.Regex
-  ( provideMatch,
-    tryProvideMatch
+  ( provideMatch
+  , tryProvideMatch
   )
 where
 
@@ -11,6 +11,7 @@ where
 import           System.Random
 
 import           Control.Monad.State.Lazy
+import qualified Data.CharSet                  as CS
 import           Data.Foldable
 import           Data.Monoid
 import           Text.Parsec.Error
@@ -24,23 +25,26 @@ import           FunCheck.Data.TemplateAlg
 
 tryProvideMatch :: (RandomGen g, MonadState g f)
                 => RegularDataTemplateAlg f
+                -> CS.CharSet
                 -> String
                 -> Either ParseError (f String)
-tryProvideMatch t s = provideMatch t . fst <$> parseRegex s
+tryProvideMatch t cs s = provideMatch t cs . fst <$> parseRegex s
 
 provideMatch :: forall g f
               . (RandomGen g, MonadState g f)
              => RegularDataTemplateAlg f
+             -> CS.CharSet
              -> Pattern
              -> f String
-provideMatch t = matchAll
+provideMatch t chars = matchAll
  where
+  lit'     = lit t
+  oneOf'   = oneOf t
+  repeatN' = repeatN t
+  plus'    = plus t
+  star'    = star t
 
-  lit'      = lit t
-  oneOf'    = oneOf t
-  repeatN'  = repeatN t
-  plus'     = plus t
-  star'     = star t
+  charList = CS.toList chars
 
   combineAs :: Foldable h => f (h String) -> f String
   combineAs = fmap fold
@@ -58,18 +62,15 @@ provideMatch t = matchAll
   matchAll (PBound mn mx p) = combineAs $ repeatN' (Just mn, mx) (matchAll p)
   matchAll (PCarat  _     ) = lit' ""
   matchAll (PDollar _     ) = lit' ""
-  matchAll (PDot    _     ) = stateList random
+  matchAll (PDot    _     ) = stateList $ randomPick charList
   matchAll (PAny _ pSet   ) = stateList $ randomPick (reducePatternSet pSet)
   matchAll (PAnyNot _ pSet) =
-    stateList $ randomPick (filter (`notElem` reducePatternSet pSet) charset)
+    stateList $ randomPick (filter (`notElem` reducePatternSet pSet) charList)
   matchAll (PEscape _ c  ) = lit' [c]
   matchAll (PChar   _ c  ) = lit' [c]
   matchAll (PNonCapture p) = matchAll p
   matchAll (PNonEmpty   p) = matchAll p
 
-  -- TODO: This is awful.  Make this better.
-  charset
-    = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()-=_+\\][{}|';:\"?><,./`~\t\r\n"
 
   stateList :: (g -> (Char, g)) -> f String
   stateList s = (: []) <$> state s
