@@ -18,6 +18,7 @@ import           Test.QuickCheck.Gen
 
 import           Control.Monad.State.Lazy
 import           Data.Bifunctor
+import           Data.Functor.Alt
 import           Data.Maybe
 
 import           FunCheck.Data.TemplateAlg
@@ -39,13 +40,14 @@ data RandomOutputAlgConfig = RandomOutputAlgConfig {
   _maxRepeat :: Int
 }
 
-randomOutputAlg :: (MonadState g f, RandomGen g)
+randomOutputAlg :: (MonadState g f, RandomGen g, Alt f)
                 => RandomOutputAlgConfig
                 -> RegularDataTemplateAlg f
 randomOutputAlg conf = RegularDataTemplate
   { repeatN = repeatN'
   , oneOf   = oneOf'
   , lit     = pure
+  , chain   = (<!>)
   }
  where
 
