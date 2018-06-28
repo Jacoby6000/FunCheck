@@ -8,16 +8,18 @@ module FunCheck.Data.Regex
 where
 
 
+import           System.Random
+
+import           Control.Monad.State.Lazy
 import           Data.Foldable
 import           Data.Monoid
+import           Text.Parsec.Error
+import           Text.Regex.TDFA.Pattern
+import           Text.Regex.TDFA.ReadRegex
+
 import           FunCheck.Data.Gen
 import           FunCheck.Data.TemplateAlg
 
-import           Control.Monad.State.Lazy
-import           System.Random
-import           Text.Regex.TDFA.Pattern
-import           Text.Regex.TDFA.ReadRegex
-import           Text.Parsec.Error
 
 
 tryProvideMatch :: (RandomGen g, MonadState g f)
@@ -35,7 +37,6 @@ provideMatch t = matchAll
  where
 
   lit'      = lit t
-  chainAll' = chainAll t (lit' "")
   oneOf'    = oneOf t
   repeatN'  = repeatN t
   plus'     = plus t
@@ -48,7 +49,7 @@ provideMatch t = matchAll
   matchAll PEmpty         = lit' ""
   matchAll (PGroup _ sub) = matchAll sub
   matchAll (POr     ps  ) = oneOf' (matchAll <$> ps)
-  matchAll (PConcat ps  ) = chainAll' (matchAll <$> ps)
+  matchAll (PConcat ps  ) = join <$> traverse matchAll ps
   matchAll (PQuest  p   ) = combineAs $ repeatN' (Just 0, Just 1) (matchAll p)
   matchAll (PPlus   p   ) = combineAs $ plus' (matchAll p)
   matchAll (PStar _ p   ) = combineAs $ star' (matchAll p)

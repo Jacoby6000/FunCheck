@@ -11,15 +11,17 @@ module FunCheck.Data.Gen
   )
 where
 
-import           Data.Bifunctor
-import           Data.Functor.Alt
-import           Data.Maybe
-import           FunCheck.Data.TemplateAlg
-
-import           Control.Monad.State.Lazy
 import           System.Random
+
 import           Test.QuickCheck.Arbitrary
 import           Test.QuickCheck.Gen
+
+import           Control.Monad.State.Lazy
+import           Data.Bifunctor
+import           Data.Maybe
+
+import           FunCheck.Data.TemplateAlg
+
 
 
 randLit :: RegularDataTemplateAlg f -> Gen a -> IO (f a)
@@ -37,14 +39,13 @@ data RandomOutputAlgConfig = RandomOutputAlgConfig {
   _maxRepeat :: Int
 }
 
-randomOutputAlg :: (MonadState g f, Alt f, RandomGen g)
+randomOutputAlg :: (MonadState g f, RandomGen g)
                 => RandomOutputAlgConfig
                 -> RegularDataTemplateAlg f
 randomOutputAlg conf = RegularDataTemplate
   { repeatN = repeatN'
   , oneOf   = oneOf'
   , lit     = pure
-  , chain   = (<!>)
   }
  where
 
@@ -66,4 +67,4 @@ randomOutputAlg conf = RegularDataTemplate
   oneOf' fas = join (state $ randomPick fas)
 
 randomPick :: RandomGen g => [a] -> g -> (a, g)
-randomPick as g = first (as !!) (randomR (0, length as) g)
+randomPick as g = first (as !!) (randomR (0, pred $ length as) g)
