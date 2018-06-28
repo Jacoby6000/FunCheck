@@ -45,6 +45,7 @@ provideMatch t chars = matchAll
   star'    = star t
 
   charList = CS.toList chars
+  litChar c = lit' [c]
 
   combineAs :: Foldable h => f (h String) -> f String
   combineAs = fmap fold
@@ -61,17 +62,14 @@ provideMatch t chars = matchAll
   matchAll (PBound mn mx p) = combineAs $ repeatN' (Just mn, mx) (matchAll p)
   matchAll (PCarat  _     ) = lit' ""
   matchAll (PDollar _     ) = lit' ""
-  matchAll (PDot    _     ) = stateList $ randomPick charList
-  matchAll (PAny _ pSet   ) = stateList $ randomPick (reducePatternSet pSet)
-  matchAll (PAnyNot _ pSet) = stateList $ randomPick (filter (`notElem` reducePatternSet pSet) charList)
+  matchAll (PDot    _     ) = oneOf' (litChar <$> charList)
+  matchAll (PAny _ pSet   ) = oneOf' (litChar <$> reducePatternSet pSet)
+  matchAll (PAnyNot _ pSet) = oneOf' (litChar <$> filter (`notElem` reducePatternSet pSet) charList)
   matchAll (PEscape _ c  ) = lit' [c]
   matchAll (PChar   _ c  ) = lit' [c]
   matchAll (PNonCapture p) = matchAll p
   matchAll (PNonEmpty   p) = matchAll p
 
-
-  stateList :: (g -> (Char, g)) -> f String
-  stateList s = (: []) <$> state s
 
   reducePatternSet :: PatternSet -> String
   reducePatternSet (PatternSet maybeChars maybeClasses maybeCollatingElements maybeEqvClass)
