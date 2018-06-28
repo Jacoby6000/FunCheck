@@ -57,15 +57,13 @@ provideMatch t chars = matchAll
   matchAll (PQuest  p   ) = combineAs $ repeatN' (Just 0, Just 1) (matchAll p)
   matchAll (PPlus   p   ) = combineAs $ plus' (matchAll p)
   matchAll (PStar _ p   ) = combineAs $ star' (matchAll p)
-  matchAll (PBound mx Nothing p) =
-    combineAs $ repeatN' (Nothing, Just mx) (matchAll p)
+  matchAll (PBound mx Nothing p) = combineAs $ repeatN' (Nothing, Just mx) (matchAll p)
   matchAll (PBound mn mx p) = combineAs $ repeatN' (Just mn, mx) (matchAll p)
   matchAll (PCarat  _     ) = lit' ""
   matchAll (PDollar _     ) = lit' ""
   matchAll (PDot    _     ) = stateList $ randomPick charList
   matchAll (PAny _ pSet   ) = stateList $ randomPick (reducePatternSet pSet)
-  matchAll (PAnyNot _ pSet) =
-    stateList $ randomPick (filter (`notElem` reducePatternSet pSet) charList)
+  matchAll (PAnyNot _ pSet) = stateList $ randomPick (filter (`notElem` reducePatternSet pSet) charList)
   matchAll (PEscape _ c  ) = lit' [c]
   matchAll (PChar   _ c  ) = lit' [c]
   matchAll (PNonCapture p) = matchAll p
