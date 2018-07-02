@@ -24,7 +24,7 @@ tryProvideMatch :: (RandomGen g, MonadState g f)
                 => RegularDataTemplateAlg f
                 -> CS.CharSet
                 -> String
-                -> Either ParseError (f String)
+                -> Either ParseError (f Char)
 tryProvideMatch t cs s = provideMatch t cs . fst <$> parseRegex s
 
 provideMatch :: forall g f
@@ -32,7 +32,7 @@ provideMatch :: forall g f
              => RegularDataTemplateAlg f
              -> CS.CharSet
              -> Pattern
-             -> f String
+             -> f Char
 provideMatch t chars = matchAll
  where
   lit'      = lit t
@@ -40,28 +40,27 @@ provideMatch t chars = matchAll
   repeatN'  = repeatN t
   plus'     = plus t
   star'     = star t
-  chainAll' = chainAll t (lit' "")
+  chainAll' = chainAll t (lit' '\0')
 
   charList  = CS.toList chars
-  litChar c = lit' [c]
 
-  matchAll :: Pattern -> f String
-  matchAll PEmpty                = lit' ""
+  matchAll :: Pattern -> f Char
+  matchAll PEmpty                = lit' '\0'
   matchAll (PGroup _ sub       ) = matchAll sub
   matchAll (POr     ps         ) = oneOf' (matchAll <$> ps)
   matchAll (PConcat ps         ) = chainAll' (matchAll <$> ps)
   matchAll (PQuest  p          ) = repeatN' (Just 0, Just 1) (matchAll p)
-  matchAll (PPlus   p          ) = toList <$> plus' (matchAll p)
+  matchAll (PPlus   p          ) = plus' (matchAll p)
   matchAll (PStar _ p          ) = star' (matchAll p)
   matchAll (PBound mx Nothing p) = repeatN' (Nothing, Just mx) (matchAll p)
   matchAll (PBound mn mx      p) = repeatN' (Just mn, mx) (matchAll p)
-  matchAll (PCarat  _          ) = lit' ""
-  matchAll (PDollar _          ) = lit' ""
-  matchAll (PDot    _          ) = oneOf' (litChar <$> charList)
-  matchAll (PAny    _ pSet     ) = oneOf' (litChar <$> reducePatternSet pSet)
-  matchAll (PAnyNot _ pSet     ) = oneOf' (litChar <$> filter (`notElem` reducePatternSet pSet) charList)
-  matchAll (PEscape _ c        ) = lit' [c]
-  matchAll (PChar   _ c        ) = lit' [c]
+  matchAll (PCarat  _          ) = lit' '\0'
+  matchAll (PDollar _          ) = lit' '\0'
+  matchAll (PDot    _          ) = oneOf' (lit' <$> charList)
+  matchAll (PAny    _ pSet     ) = oneOf' (lit' <$> reducePatternSet pSet)
+  matchAll (PAnyNot _ pSet     ) = oneOf' (lit' <$> filter (`notElem` reducePatternSet pSet) charList)
+  matchAll (PEscape _ c        ) = lit' c
+  matchAll (PChar   _ c        ) = lit' c
   matchAll (PNonCapture p      ) = matchAll p
   matchAll (PNonEmpty   p      ) = matchAll p
 

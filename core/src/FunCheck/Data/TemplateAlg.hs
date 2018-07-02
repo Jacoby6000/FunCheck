@@ -10,8 +10,6 @@ module FunCheck.Data.TemplateAlg
   )
 where
 
-import           Data.Semigroup
-
 data RegularDataTemplateAlg f = RegularDataTemplate {
   repeatN :: forall a. (Maybe Int, Maybe Int) -> f a -> f a,
   oneOf :: forall a. [f a] -> f a,
@@ -19,14 +17,15 @@ data RegularDataTemplateAlg f = RegularDataTemplate {
   chain :: forall a. f a -> f a -> f a
 }
 
-plus :: (Applicative f, Semigroup a) => RegularDataTemplateAlg f -> f a -> f a
-plus t fa = (<>) <$> fa <*> repeatN t (Nothing, Nothing) fa
+plus :: (Applicative f) => RegularDataTemplateAlg f -> f a -> f a
+plus = flip repeatN (Just 1, Nothing)
 
 optional :: (Functor f) => RegularDataTemplateAlg f -> f a -> f a
-optional t = repeatN t (Just 0, Just 1)
+optional = flip repeatN (Just 0, Just 1)
 
 star :: RegularDataTemplateAlg f -> f a -> f a
-star t = repeatN t (Nothing, Nothing)
+star = flip repeatN (Nothing, Nothing)
 
 chainAll :: RegularDataTemplateAlg f -> f a -> [f a] -> f a
+
 chainAll t = foldl (chain t)
