@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeOperators, RankNTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, ScopedTypeVariables  #-}
 
 module FunCheck.Data.Gen
   ( randLit
@@ -18,7 +18,7 @@ import           Test.QuickCheck.Gen
 
 import           Control.Monad.State.Lazy
 import           Data.Bifunctor
-import           Data.Functor.Alt
+import           Data.Functor.Plus
 import           Data.Maybe
 
 import           FunCheck.Data.TemplateAlg
@@ -40,15 +40,8 @@ data RandomOutputAlgConfig = RandomOutputAlgConfig {
   _maxRepeat :: Int
 }
 
-randomOutputAlg :: (MonadState g f, RandomGen g, Alt f)
-                => RandomOutputAlgConfig
-                -> RegularDataTemplateAlg f
-randomOutputAlg conf = RegularDataTemplate
-  { repeatN = repeatN'
-  , oneOf   = oneOf'
-  , lit     = pure
-  , chain   = (<!>)
-  }
+randomOutputAlg :: forall g f. (MonadState g f, RandomGen g, Plus f) => RandomOutputAlgConfig -> RegularDataTemplateAlg f
+randomOutputAlg conf = RegularDataTemplate {repeatN = repeatN', oneOf = oneOf', lit = pure, chain = (<!>)}
  where
 
   minRep :: Int
@@ -57,13 +50,10 @@ randomOutputAlg conf = RegularDataTemplate
   maxRep :: Int
   maxRep = _maxRepeat conf
 
-  repeatN' :: (MonadState g f, RandomGen g)
-           => (Maybe Int, Maybe Int)
-           -> f a
-           -> f [a]
+  repeatN' :: (Maybe Int, Maybe Int) -> f a -> f a
   repeatN' range fa =
     let rangeWithDefaults = bimap (fromMaybe minRep) (fromMaybe maxRep) range
-    in  state (randomR rangeWithDefaults) >>= flip replicateM fa
+    in  (\x -> foldl (<!>) zero $ replicate x fa) =<< state (randomR rangeWithDefaults)
 
   oneOf' :: (MonadState g f, RandomGen g) => [f a] -> f a
   oneOf' fas = join (state $ randomPick fas)
