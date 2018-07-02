@@ -40,7 +40,10 @@ data RandomOutputAlgConfig = RandomOutputAlgConfig {
   _maxRepeat :: Int
 }
 
-randomOutputAlg :: forall g f. (MonadState g f, RandomGen g, Plus f) => RandomOutputAlgConfig -> RegularDataTemplateAlg f
+randomOutputAlg :: forall g f
+                 . (MonadState g f, RandomGen g, Plus f)
+                => RandomOutputAlgConfig
+                -> RegularDataTemplateAlg f
 randomOutputAlg conf = RegularDataTemplate {repeatN = repeatN', oneOf = oneOf', lit = pure, chain = (<!>)}
  where
 
