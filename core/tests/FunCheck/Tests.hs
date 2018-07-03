@@ -25,33 +25,33 @@ randomRegexTests :: Test
 randomRegexTests = testGroup "Random" randomTs
  where
   testRandom :: String -> (Int -> Progress) -> TestInstance
-  testRandom name f = test [regexTest, randomTest] name (f <$> time)
+  testRandom n f = test [regexTest, randomTest] n (f <$> time)
 
   alg :: RandomGen g => RegularDataTemplateAlg (StateT g [])
   alg = randomOutputAlg $ RandomOutputAlgConfig 0 10
 
   evalExpecting :: (String -> a -> Progress) -> String -> a -> Int -> Progress
-  evalExpecting compare regex expected time = errOr verifyResult builtState
+  evalExpecting f regex expected seed = errOr verifyResult builtState
    where
     builtState = tryProvideMatch alg CS.ascii regex
-    verifyResult st = compare (evalStateT st (mkStdGen time)) expected
+    verifyResult st = f (evalStateT st (mkStdGen seed)) expected
 
-  literal = evalExpecting shouldEqual "a" "a"
-  empty   = evalExpecting shouldEqual "^" "\0"
+  literal  = evalExpecting shouldEqual "a" "a"
+  emptyPat = evalExpecting shouldEqual "^" "\0"
 
   lowerAlphaChar =
     let lowercaseChars = ((: []) <$> toList CS.lower)
-    in evalExpecting shouldBeOneOf "[a-z]" lowercaseChars
+    in  evalExpecting shouldBeOneOf "[a-z]" lowercaseChars
 
   upperAlphaChar =
     let uppercaseChars = ((: []) <$> toList CS.upper)
-    in evalExpecting shouldBeOneOf "[A-Z]" uppercaseChars
+    in  evalExpecting shouldBeOneOf "[A-Z]" uppercaseChars
 
   randomTs :: [Test]
   randomTs =
     Test
       <$> [ testRandom "Literal"               literal
-          , testRandom "Empty"                 empty
+          , testRandom "Empty"                 emptyPat
           , testRandom "Lowercase Alpha Char"  lowerAlphaChar
           , testRandom "Uppsercase Alpha Char" upperAlphaChar
           ]
@@ -62,7 +62,6 @@ time = fromIntegral . systemSeconds <$> getSystemTime
 
 test :: [String] -> String -> IO Progress -> TestInstance
 test ts n r = TestInstance {run = r, name = n, tags = ts, options = [], setOption = \_ _ -> Right (test ts n r)}
-
 
 shouldEqual :: (Eq a, Show a) => a -> a -> Progress
 shouldEqual l r = if l == r then Finished Pass else failure (show l ++ " did not equal expected " ++ show r)
