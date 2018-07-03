@@ -1,6 +1,7 @@
-{-# LANGUAGE TypeOperators, RankNTypes #-}
-{-# LANGUAGE FlexibleContexts, ScopedTypeVariables  #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 
 module FunCheck.Data.Gen
   ( randLit
@@ -16,7 +17,6 @@ import           Control.Monad.State.Lazy
 import           Data.Bifunctor
 import           Data.Functor.Plus
 import           Data.Maybe
-import           Data.Tuple
 import           FunCheck.Data.TemplateAlg
 import           System.Random
 import           Test.QuickCheck.Arbitrary
@@ -45,11 +45,11 @@ randomOutputAlg conf = RegularDataTemplate {repeatN = repeatN', oneOf = oneOf', 
  where
 
 
-  chain' :: forall a. f a -> f a -> f a
+  chain' :: forall a . f a -> f a -> f a
   chain' = combined
-    where
-     splat = modify (snd . split)
-     combined s1 s2 = (splat *> s1) <!> (splat *> s2)
+   where
+    splat = modify (snd . split)
+    combined s1 s2 = (splat *> s1) <!> (splat *> s2)
 
   minRep :: Int
   minRep = _minRepeat conf
