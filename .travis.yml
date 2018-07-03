@@ -21,6 +21,8 @@ ghc:
 cache:
   directories:
   - $HOME/.cabal
+  - ./dist
+  - ./dist-newstyle
 
 # Ensure necessary system libraries are present
 addons:
@@ -35,5 +37,5 @@ install:
 - cabal install --only-dependencies --enable-tests
 
 script:
-- cabal configure --enable-tests && cabal build && cabal test
+- cabal new-configure --enable-tests && cabal new-build && cabal new-test
 
