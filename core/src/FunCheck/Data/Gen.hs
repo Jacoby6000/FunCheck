@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeOperators, RankNTypes #-}
 {-# LANGUAGE FlexibleContexts, ScopedTypeVariables  #-}
+{-# LANGUAGE TupleSections #-}
 
 module FunCheck.Data.Gen
   ( randLit
@@ -11,19 +12,15 @@ module FunCheck.Data.Gen
   )
 where
 
-import           System.Random
-
-import           Test.QuickCheck.Arbitrary
-import           Test.QuickCheck.Gen
-
 import           Control.Monad.State.Lazy
 import           Data.Bifunctor
 import           Data.Functor.Plus
 import           Data.Maybe
-
+import           Data.Tuple
 import           FunCheck.Data.TemplateAlg
-
-
+import           System.Random
+import           Test.QuickCheck.Arbitrary
+import           Test.QuickCheck.Gen
 
 randLit :: RegularDataTemplateAlg f -> Gen a -> IO (f a)
 randLit t g = lit t <$> generate g
@@ -44,8 +41,15 @@ randomOutputAlg :: forall g f
                  . (MonadState g f, RandomGen g, Plus f)
                 => RandomOutputAlgConfig
                 -> RegularDataTemplateAlg f
-randomOutputAlg conf = RegularDataTemplate {repeatN = repeatN', oneOf = oneOf', lit = pure, chain = (<!>)}
+randomOutputAlg conf = RegularDataTemplate {repeatN = repeatN', oneOf = oneOf', lit = pure, chain = chain'}
  where
+
+
+  chain' :: forall a. f a -> f a -> f a
+  chain' = combined
+    where
+     splat = modify (snd . split)
+     combined s1 s2 = (splat *> s1) <!> (splat *> s2)
 
   minRep :: Int
   minRep = _minRepeat conf
@@ -54,9 +58,11 @@ randomOutputAlg conf = RegularDataTemplate {repeatN = repeatN', oneOf = oneOf', 
   maxRep = _maxRepeat conf
 
   repeatN' :: (Maybe Int, Maybe Int) -> f a -> f a
-  repeatN' range fa =
-    let rangeWithDefaults = bimap (fromMaybe minRep) (fromMaybe maxRep) range
-    in  (\x -> foldl (<!>) zero $ replicate x fa) =<< state (randomR rangeWithDefaults)
+  repeatN' range = repeated
+   where
+    rangeWithDefaults = bimap (fromMaybe minRep) (fromMaybe maxRep) range
+    repeated fa = foldl chain' zero =<< (flip replicate fa <$> state (randomR rangeWithDefaults))
+
 
   oneOf' :: (MonadState g f, RandomGen g) => [f a] -> f a
   oneOf' fas = join (state $ randomPick fas)

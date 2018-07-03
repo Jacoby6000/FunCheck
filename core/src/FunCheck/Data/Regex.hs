@@ -1,15 +1,14 @@
-{-# LANGUAGE TypeOperators, RankNTypes #-}
-{-# LANGUAGE FlexibleContexts, ScopedTypeVariables #-}
-
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module FunCheck.Data.Regex
   ( provideMatch
   , tryProvideMatch
   )
 where
 
-
 import           System.Random
-
 import           Control.Monad.State.Lazy
 import           Data.Foldable
 import           Data.Monoid
@@ -17,7 +16,6 @@ import           Text.Parsec.Error
 import           Text.Regex.TDFA.Pattern
 import           Text.Regex.TDFA.ReadRegex
 import qualified Data.CharSet                  as CS
-
 import           FunCheck.Data.TemplateAlg
 
 tryProvideMatch :: (RandomGen g, MonadState g f)
@@ -35,14 +33,17 @@ provideMatch :: forall g f
              -> f Char
 provideMatch t chars = matchAll
  where
-  lit'      = lit t
-  oneOf'    = oneOf t
-  repeatN'  = repeatN t
-  plus'     = plus t
-  star'     = star t
-  chainAll' = chainAll t (lit' '\0')
+  lit'     = lit t
+  oneOf'   = oneOf t
+  repeatN' = repeatN t
+  plus'    = plus t
+  star'    = star t
 
-  charList  = CS.toList chars
+  chainAll' :: [f Char] -> f Char
+  chainAll' (fa : fas) = chainAll t fa fas
+  chainAll' []      = lit' '\0'
+
+  charList = CS.toList chars
 
   matchAll :: Pattern -> f Char
   matchAll PEmpty                = lit' '\0'
