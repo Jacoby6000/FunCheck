@@ -61,7 +61,6 @@ randomRegexTests = testGroup "Random" randomTs
           ]
 
 
-
 test :: [String] -> String -> IO Progress -> TestInstance
 test ts n r = TestInstance {run = r, name = n, tags = ts, options = [], setOption = \_ _ -> Right (test ts n r)}
 
