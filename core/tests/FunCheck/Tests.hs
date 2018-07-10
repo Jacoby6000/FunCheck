@@ -34,26 +34,19 @@ randomRegexTests = testGroup "Random" randomTs
     builtState = tryProvideMatch alg CS.ascii regex
     verifyResult st = f (evalStateT st (mkStdGen seed)) expected
 
-  literal  = evalExpecting shouldEqual "a" "a"
-  emptyPat = evalExpecting shouldEqual "^" "\0"
-  combineLiterals = evalExpecting shouldEqual "abcd" "abcd"
-
-  lowerAlphaChar =
-    let lowercaseChars = ((: []) <$> toList CS.lower)
-    in  evalExpecting shouldBeOneOf "[a-z]" lowercaseChars
-
-  upperAlphaChar =
-    let uppercaseChars = ((: []) <$> toList CS.upper)
-    in  evalExpecting shouldBeOneOf "[A-Z]" uppercaseChars
+  checkEquals    = evalExpecting shouldEqual
+  checkOneOf     = evalExpecting shouldBeOneOf
+  lowercaseChars = (: []) <$> toList CS.lower
+  uppercaseChars = (: []) <$> toList CS.upper
 
   randomTs :: [Test]
   randomTs =
     Test
-      <$> [ testRandom "Literal"               literal
-          , testRandom "Empty"                 emptyPat
-          , testRandom "Combine Literals"      combineLiterals
-          , testRandom "Lowercase Alpha Char"  lowerAlphaChar
-          , testRandom "Uppsercase Alpha Char" upperAlphaChar
+      <$> [ testRandom "Literal"               $ "a"     `checkEquals` "a"
+          , testRandom "Empty"                 $ "^"     `checkEquals` "\0"
+          , testRandom "Combine Literals"      $ "abcd"  `checkEquals` "abcd"
+          , testRandom "Lowercase Alpha Char"  $ "[a-z]" `checkOneOf`  lowercaseChars
+          , testRandom "Uppsercase Alpha Char" $ "[A-Z]" `checkOneOf`  uppercaseChars
           ]
 
 time :: IO Int
