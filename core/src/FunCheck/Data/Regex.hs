@@ -1,6 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module FunCheck.Data.Regex
   ( provideMatch
@@ -8,8 +7,6 @@ module FunCheck.Data.Regex
   )
 where
 
-import           System.Random
-import           Control.Monad.State.Lazy
 import           Data.Foldable
 import           Data.Monoid
 import           Text.Parsec.Error
@@ -18,19 +15,10 @@ import           Text.Regex.TDFA.ReadRegex
 import qualified Data.CharSet                  as CS
 import           FunCheck.Data.TemplateAlg
 
-tryProvideMatch :: (RandomGen g, MonadState g f)
-                => RegularDataTemplateAlg f
-                -> CS.CharSet
-                -> String
-                -> Either ParseError (f Char)
+tryProvideMatch :: Applicative f => RegularDataTemplateAlg f -> CS.CharSet -> String -> Either ParseError (f Char)
 tryProvideMatch t cs s = provideMatch t cs . fst <$> parseRegex s
 
-provideMatch :: forall g f
-              . (RandomGen g, MonadState g f)
-             => RegularDataTemplateAlg f
-             -> CS.CharSet
-             -> Pattern
-             -> f Char
+provideMatch :: forall f . Applicative f => RegularDataTemplateAlg f -> CS.CharSet -> Pattern -> f Char
 provideMatch t chars = matchAll
  where
   lit'     = lit t
@@ -41,7 +29,7 @@ provideMatch t chars = matchAll
 
   chainAll' :: [f Char] -> f Char
   chainAll' (fa : fas) = chainAll t fa fas
-  chainAll' []      = lit' '\0'
+  chainAll' []         = lit' '\0'
 
   charList = CS.toList chars
 

@@ -3,15 +3,13 @@ module FunCheck.Tests
   )
 where
 
-import           Control.Monad.State.Lazy
+import           Control.Monad.List
+import           Data.CharSet
 import           Distribution.TestSuite
 import           FunCheck.Data.Gen
 import           FunCheck.Data.Regex
 import           FunCheck.Data.TemplateAlg
-import           System.Random
 import qualified Data.CharSet.Common           as CS
-import           Data.CharSet
-import           Data.Time.Clock.System
 
 tests :: IO [Test]
 tests = return [regexTests]
@@ -24,20 +22,23 @@ regexTests = testGroup "Regex" [randomRegexTests]
 randomRegexTests :: Test
 randomRegexTests = testGroup "Random" randomTs
  where
-  testRandom :: String -> (Int -> Progress) -> TestInstance
-  testRandom n f = test [regexTest, randomTest] n (f <$> time)
+  testRandom :: String -> IO Progress -> TestInstance
+  testRandom = test [regexTest, randomTest]
 
-  alg :: RandomGen g => RegularDataTemplateAlg (StateT g [])
+  alg :: RegularDataTemplateAlg (ListT IO)
   alg = randomOutputAlg $ RandomOutputAlgConfig 0 10
 
-  evalExpecting :: (String -> a -> Progress) -> String -> a -> Int -> Progress
-  evalExpecting f regex expected seed = errOr verifyResult builtState
+  evalExpecting :: (String -> a -> Progress) -> String -> a -> IO Progress
+  evalExpecting f regex expected = errOr verifyResult <$> builtResult
    where
-    builtState = tryProvideMatch alg CS.ascii regex
-    verifyResult st = f (evalStateT st (mkStdGen seed)) expected
+    builtResult = sequence (runListT <$> tryProvideMatch alg CS.ascii regex)
+
+    verifyResult :: [Char] -> Progress
+    verifyResult list = f list expected
 
   literal  = evalExpecting shouldEqual "a" "a"
   emptyPat = evalExpecting shouldEqual "^" "\0"
+  combineExprs = evalExpecting shouldEqual "abcd" "abcd"
 
   lowerAlphaChar =
     let lowercaseChars = ((: []) <$> toList CS.lower)
@@ -52,13 +53,11 @@ randomRegexTests = testGroup "Random" randomTs
     Test
       <$> [ testRandom "Literal"               literal
           , testRandom "Empty"                 emptyPat
+          , testRandom "Combine Expressions"   combineExprs
           , testRandom "Lowercase Alpha Char"  lowerAlphaChar
           , testRandom "Uppsercase Alpha Char" upperAlphaChar
           ]
 
-
-time :: IO Int
-time = fromIntegral . systemSeconds <$> getSystemTime
 
 test :: [String] -> String -> IO Progress -> TestInstance
 test ts n r = TestInstance {run = r, name = n, tags = ts, options = [], setOption = \_ _ -> Right (test ts n r)}

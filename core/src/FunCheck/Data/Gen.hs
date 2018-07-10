@@ -1,6 +1,5 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 
 module FunCheck.Data.Gen
@@ -8,17 +7,15 @@ module FunCheck.Data.Gen
   , arbLit
   , randRange
   , randomOutputAlg
-  , randomPick
   , RandomOutputAlgConfig(..)
   )
 where
 
-import           Control.Monad.State.Lazy
+import           Control.Monad.Random
 import           Data.Bifunctor
 import           Data.Functor.Plus
 import           Data.Maybe
 import           FunCheck.Data.TemplateAlg
-import           System.Random
 import           Test.QuickCheck.Arbitrary
 import           Test.QuickCheck.Gen
 
@@ -37,19 +34,22 @@ data RandomOutputAlgConfig = RandomOutputAlgConfig {
   _maxRepeat :: Int
 }
 
+
 randomOutputAlg :: forall g f
-                 . (MonadState g f, RandomGen g, Plus f)
+                 . (RandomGen g, MonadRandom f, MonadSplit g f, Plus f)
                 => RandomOutputAlgConfig
                 -> RegularDataTemplateAlg f
-randomOutputAlg conf = RegularDataTemplate {repeatN = repeatN', oneOf = oneOf', lit = pure, chain = chain'}
+randomOutputAlg conf = RegularDataTemplate {
+  repeatN = repeatN',
+  oneOf = oneOf',
+  lit = pure,
+  chain = chain'
+}
  where
-
-
   chain' :: forall a . f a -> f a -> f a
   chain' = combined
    where
-    splat = modify (snd . split)
-    combined s1 s2 = (splat *> s1) <!> (splat *> s2)
+    combined s1 s2 = (getSplit *> s1) <!> (getSplit *> s2)
 
   minRep :: Int
   minRep = _minRepeat conf
@@ -61,11 +61,9 @@ randomOutputAlg conf = RegularDataTemplate {repeatN = repeatN', oneOf = oneOf', 
   repeatN' range = repeated
    where
     rangeWithDefaults = bimap (fromMaybe minRep) (fromMaybe maxRep) range
-    repeated fa = foldl chain' zero =<< (flip replicate fa <$> state (randomR rangeWithDefaults))
+    repeated fa = foldl chain' zero =<< (flip replicate fa <$> getRandomR rangeWithDefaults)
 
 
-  oneOf' :: (MonadState g f, RandomGen g) => [f a] -> f a
-  oneOf' fas = join (state $ randomPick fas)
+  oneOf' :: (MonadRandom f, RandomGen g) => [f a] -> f a
+  oneOf' fas = join (uniform fas)
 
-randomPick :: RandomGen g => [a] -> g -> (a, g)
-randomPick as g = first (as !!) (randomR (0, pred $ length as) g)

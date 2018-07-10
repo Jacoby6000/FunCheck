@@ -1,5 +1,4 @@
 {-# LANGUAGE TypeOperators, RankNTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 module FunCheck.Data.TemplateAlg
   ( RegularDataTemplateAlg(..)
