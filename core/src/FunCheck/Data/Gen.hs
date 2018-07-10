@@ -39,17 +39,15 @@ randomOutputAlg :: forall g f
                  . (RandomGen g, MonadRandom f, MonadSplit g f, Plus f)
                 => RandomOutputAlgConfig
                 -> RegularDataTemplateAlg f
-randomOutputAlg conf = RegularDataTemplate {
-  repeatN = repeatN',
-  oneOf = oneOf',
-  lit = pure,
-  chain = chain'
-}
+randomOutputAlg conf = RegularDataTemplate
+  { repeatN = repeatN'
+  , oneOf   = oneOf'
+  , lit     = pure
+  , chain   = chain'
+  }
  where
   chain' :: forall a . f a -> f a -> f a
-  chain' = combined
-   where
-    combined s1 s2 = (getSplit *> s1) <!> (getSplit *> s2)
+  chain' = combined where combined s1 s2 = (getSplit *> s1) <!> (getSplit *> s2)
 
   minRep :: Int
   minRep = _minRepeat conf
@@ -58,12 +56,9 @@ randomOutputAlg conf = RegularDataTemplate {
   maxRep = _maxRepeat conf
 
   repeatN' :: (Maybe Int, Maybe Int) -> f a -> f a
-  repeatN' range = repeated
-   where
-    rangeWithDefaults = bimap (fromMaybe minRep) (fromMaybe maxRep) range
-    repeated fa = foldl chain' zero =<< (flip replicate fa <$> getRandomR rangeWithDefaults)
-
+  repeatN' range fa =
+    let rangeWithDefaults = bimap (fromMaybe minRep) (fromMaybe maxRep) range
+     in foldl chain' zero =<< (flip replicate fa <$> getRandomR rangeWithDefaults)
 
   oneOf' :: (MonadRandom f, RandomGen g) => [f a] -> f a
   oneOf' fas = join (uniform fas)
-

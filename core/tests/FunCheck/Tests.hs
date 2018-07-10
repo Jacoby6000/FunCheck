@@ -29,12 +29,12 @@ randomRegexTests = testGroup "Random" randomTs
   alg = randomOutputAlg $ RandomOutputAlgConfig 0 10
 
   evalExpecting :: (String -> a -> Progress) -> String -> a -> IO Progress
-  evalExpecting f regex expected = errOr (`f` expected) <$> builtResult
-   where
-    builtResult = sequence (runListT <$> tryProvideMatch alg CS.ascii regex)
+  evalExpecting f regex expected =
+    let builtResult = sequence (runListT <$> tryProvideMatch alg CS.ascii regex)
+    in  errOr (`f` expected) <$> builtResult
 
-  literal  = evalExpecting shouldEqual "a" "a"
-  emptyPat = evalExpecting shouldEqual "^" "\0"
+  literal      = evalExpecting shouldEqual "a" "a"
+  emptyPat     = evalExpecting shouldEqual "^" "\0"
   combineExprs = evalExpecting shouldEqual "abcd" "abcd"
 
   lowerAlphaChar =
@@ -57,13 +57,16 @@ randomRegexTests = testGroup "Random" randomTs
 
 
 test :: [String] -> String -> IO Progress -> TestInstance
-test ts n r = TestInstance {run = r, name = n, tags = ts, options = [], setOption = \_ _ -> Right (test ts n r)}
+test ts n r =
+  TestInstance {run = r, name = n, tags = ts, options = [], setOption = \_ _ -> Right (test ts n r)}
 
 shouldEqual :: (Eq a, Show a) => a -> a -> Progress
-shouldEqual l r = if l == r then Finished Pass else failure (show l ++ " did not equal expected " ++ show r)
+shouldEqual l r =
+  if l == r then Finished Pass else failure (show l ++ " did not equal expected " ++ show r)
 
 shouldBeOneOf :: (Eq a, Show a) => a -> [a] -> Progress
-shouldBeOneOf a as = if a `elem` as then Finished Pass else failure (show a ++ " was not one of " ++ show as)
+shouldBeOneOf a as =
+  if a `elem` as then Finished Pass else failure (show a ++ " was not one of " ++ show as)
 
 errOr :: Show e => (a -> Progress) -> Either e a -> Progress
 errOr = either (err . show)
