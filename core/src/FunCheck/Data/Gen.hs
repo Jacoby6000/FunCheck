@@ -11,13 +11,14 @@ module FunCheck.Data.Gen
   )
 where
 
-import           Control.Monad.Random
+import           Control.Monad.State
 import           Data.Bifunctor
 import           Data.Functor.Plus
 import           Data.Maybe
 import           FunCheck.Data.Alg
 import           Test.QuickCheck.Arbitrary
 import           Test.QuickCheck.Gen
+import           System.Random
 
 randLit :: RegularGrammarAlg f -> Gen a -> IO (f a)
 randLit t g = lit t <$> generate g
@@ -36,7 +37,7 @@ data RandomOutputAlgConfig = RandomOutputAlgConfig {
 
 
 randomOutputAlg :: forall g f
-                 . (RandomGen g, MonadRandom f, MonadSplit g f, Plus f)
+                 . (RandomGen g, MonadState g f, Plus f)
                 => RandomOutputAlgConfig
                 -> RegularGrammarAlg f
 randomOutputAlg conf = RegularGrammarAlg
@@ -47,7 +48,10 @@ randomOutputAlg conf = RegularGrammarAlg
   }
  where
   chain' :: forall a . f a -> f a -> f a
-  chain' = combined where combined s1 s2 = (getSplit *> s1) <!> (getSplit *> s2)
+  chain' = combined
+   where
+    splat = modify (snd . split)
+    combined s1 s2 = (splat *> s1) <!> (splat *> s2)
 
   minRep :: Int
   minRep = _minRepeat conf
@@ -58,7 +62,10 @@ randomOutputAlg conf = RegularGrammarAlg
   repeatN' :: (Maybe Int, Maybe Int) -> f a -> f a
   repeatN' range fa =
     let rangeWithDefaults = bimap (fromMaybe minRep) (fromMaybe maxRep) range
-    in  foldl chain' zero =<< (flip replicate fa <$> getRandomR rangeWithDefaults)
+    in  foldl chain' zero =<< (flip replicate fa <$> (state $ randomR rangeWithDefaults))
 
-  oneOf' :: (MonadRandom f, RandomGen g) => [f a] -> f a
-  oneOf' fas = join (uniform fas)
+  oneOf' :: [f a] -> f a
+  oneOf' fas = join (state $ randomPick fas)
+
+randomPick :: RandomGen g => [a] -> g -> (a, g)
+randomPick as g = first (as !!) (randomR (0, pred $ length as) g)

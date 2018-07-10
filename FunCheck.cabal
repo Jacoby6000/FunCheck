@@ -23,7 +23,7 @@ library
   -- other-extensions:
   build-depends:       base >=4.9 && <4.11,
                        semigroupoids >=5.2,
-                       MonadRandom >=0.5,
+                       mtl >=2.2 && <2.3,
                        random >=1.0,
                        charset >=0.3,
                        parsec >=3.1,

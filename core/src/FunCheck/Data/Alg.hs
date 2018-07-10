@@ -26,5 +26,4 @@ star :: RegularGrammarAlg f -> f a -> f a
 star = flip repeatN (Nothing, Nothing)
 
 chainAll :: RegularGrammarAlg f -> f a -> [f a] -> f a
-
 chainAll t = foldl (chain t)
