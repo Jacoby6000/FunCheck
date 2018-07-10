@@ -29,12 +29,9 @@ randomRegexTests = testGroup "Random" randomTs
   alg = randomOutputAlg $ RandomOutputAlgConfig 0 10
 
   evalExpecting :: (String -> a -> Progress) -> String -> a -> IO Progress
-  evalExpecting f regex expected = errOr verifyResult <$> builtResult
+  evalExpecting f regex expected = errOr (`f` expected) <$> builtResult
    where
     builtResult = sequence (runListT <$> tryProvideMatch alg CS.ascii regex)
-
-    verifyResult :: [Char] -> Progress
-    verifyResult list = f list expected
 
   literal  = evalExpecting shouldEqual "a" "a"
   emptyPat = evalExpecting shouldEqual "^" "\0"
