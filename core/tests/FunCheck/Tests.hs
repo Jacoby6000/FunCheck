@@ -6,9 +6,9 @@ where
 import           Control.Monad.List
 import           Data.CharSet
 import           Distribution.TestSuite
+import           FunCheck.Data.Alg
 import           FunCheck.Data.Gen
 import           FunCheck.Data.Regex
-import           FunCheck.Data.TemplateAlg
 import qualified Data.CharSet.Common           as CS
 
 tests :: IO [Test]
@@ -25,7 +25,7 @@ randomRegexTests = testGroup "Random" randomTs
   testRandom :: String -> IO Progress -> TestInstance
   testRandom = test [regexTest, randomTest]
 
-  alg :: RegularDataTemplateAlg (ListT IO)
+  alg :: RegularGrammarAlg (ListT IO)
   alg = randomOutputAlg $ RandomOutputAlgConfig 0 10
 
   evalExpecting :: (String -> a -> Progress) -> String -> a -> IO Progress

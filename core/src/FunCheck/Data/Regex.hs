@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module FunCheck.Data.Regex
   ( provideMatch
@@ -9,16 +9,20 @@ where
 
 import           Data.Foldable
 import           Data.Monoid
+import           FunCheck.Data.Alg
 import           Text.Parsec.Error
 import           Text.Regex.TDFA.Pattern
 import           Text.Regex.TDFA.ReadRegex
 import qualified Data.CharSet                  as CS
-import           FunCheck.Data.TemplateAlg
 
-tryProvideMatch :: Applicative f => RegularDataTemplateAlg f -> CS.CharSet -> String -> Either ParseError (f Char)
+tryProvideMatch :: Applicative f
+                => RegularGrammarAlg f
+                -> CS.CharSet
+                -> String
+                -> Either ParseError (f Char)
 tryProvideMatch t cs s = provideMatch t cs . fst <$> parseRegex s
 
-provideMatch :: forall f . Applicative f => RegularDataTemplateAlg f -> CS.CharSet -> Pattern -> f Char
+provideMatch :: forall f . Applicative f => RegularGrammarAlg f -> CS.CharSet -> Pattern -> f Char
 provideMatch t chars = matchAll
  where
   lit'     = lit t
@@ -47,7 +51,7 @@ provideMatch t chars = matchAll
   matchAll (PDollar _          ) = lit' '\0'
   matchAll (PDot    _          ) = oneOf' (lit' <$> charList)
   matchAll (PAny    _ pSet     ) = oneOf' (lit' <$> reducePatternSet pSet)
-  matchAll (PAnyNot _ pSet     ) = oneOf' (lit' <$> filter (`notElem` reducePatternSet pSet) charList)
+  matchAll (PAnyNot _ pSet) = oneOf' (lit' <$> filter (`notElem` reducePatternSet pSet) charList)
   matchAll (PEscape _ c        ) = lit' c
   matchAll (PChar   _ c        ) = lit' c
   matchAll (PNonCapture p      ) = matchAll p

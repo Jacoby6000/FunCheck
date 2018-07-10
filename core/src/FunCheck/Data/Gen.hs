@@ -15,17 +15,17 @@ import           Control.Monad.Random
 import           Data.Bifunctor
 import           Data.Functor.Plus
 import           Data.Maybe
-import           FunCheck.Data.TemplateAlg
+import           FunCheck.Data.Alg
 import           Test.QuickCheck.Arbitrary
 import           Test.QuickCheck.Gen
 
-randLit :: RegularDataTemplateAlg f -> Gen a -> IO (f a)
+randLit :: RegularGrammarAlg f -> Gen a -> IO (f a)
 randLit t g = lit t <$> generate g
 
-arbLit :: Arbitrary a => RegularDataTemplateAlg f -> IO (f a)
+arbLit :: Arbitrary a => RegularGrammarAlg f -> IO (f a)
 arbLit t = randLit t arbitrary
 
-randRange :: Random a => RegularDataTemplateAlg f -> (a, a) -> IO (f a)
+randRange :: Random a => RegularGrammarAlg f -> (a, a) -> IO (f a)
 randRange t r = randLit t (choose r)
 
 
@@ -38,8 +38,8 @@ data RandomOutputAlgConfig = RandomOutputAlgConfig {
 randomOutputAlg :: forall g f
                  . (RandomGen g, MonadRandom f, MonadSplit g f, Plus f)
                 => RandomOutputAlgConfig
-                -> RegularDataTemplateAlg f
-randomOutputAlg conf = RegularDataTemplate
+                -> RegularGrammarAlg f
+randomOutputAlg conf = RegularGrammarAlg
   { repeatN = repeatN'
   , oneOf   = oneOf'
   , lit     = pure
@@ -58,7 +58,7 @@ randomOutputAlg conf = RegularDataTemplate
   repeatN' :: (Maybe Int, Maybe Int) -> f a -> f a
   repeatN' range fa =
     let rangeWithDefaults = bimap (fromMaybe minRep) (fromMaybe maxRep) range
-     in foldl chain' zero =<< (flip replicate fa <$> getRandomR rangeWithDefaults)
+    in  foldl chain' zero =<< (flip replicate fa <$> getRandomR rangeWithDefaults)
 
   oneOf' :: (MonadRandom f, RandomGen g) => [f a] -> f a
   oneOf' fas = join (uniform fas)

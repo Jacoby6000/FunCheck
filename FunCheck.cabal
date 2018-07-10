@@ -16,7 +16,7 @@ extra-source-files:  ChangeLog.md, README.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     FunCheck.Data.TemplateAlg,
+  exposed-modules:     FunCheck.Data.Alg,
                        FunCheck.Data.Gen,
                        FunCheck.Data.Regex
 
