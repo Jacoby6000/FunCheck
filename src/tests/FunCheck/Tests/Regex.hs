@@ -8,7 +8,7 @@ import FunCheck.Data.Gen
 import FunCheck.Data.Regex
 import FunCheck.Tests.Util
 import System.Random
-import qualified Data.CharSet.Common as CS
+import Data.CharSet.Common as CS
 
 
 regexTests :: Test

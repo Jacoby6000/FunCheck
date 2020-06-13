@@ -20,22 +20,34 @@ library funcheck-core
   ghc-options:         -Wall
 
   exposed-modules:     FunCheck.Data.Alg,
-                       FunCheck.Data.Gen,
                        FunCheck.Data.Regex
 
   -- other-extensions:
   build-depends:       base >=4.9 && <4.11,
                        semigroupoids >=5.2,
                        mtl >=2.2 && <2.3,
-                       random >=1.0,
                        charset >=0.3,
                        parsec >=3.1,
                        text >=1.2,
-                       QuickCheck >=2.11,
                        regex-tdfa >=1.2
 
-  hs-source-dirs:      core/src
+  hs-source-dirs:      src/core
 
+library funcheck-generators
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
+  exposed-modules:     FunCheck.Data.Gen
+
+  -- other-extensions:
+  build-depends:       funcheck-core, 
+                       base >=4.9 && <4.11,
+                       semigroupoids >=5.2,
+                       mtl >=2.2 && <2.3,
+                       random >=1.0,
+                       QuickCheck >=2.11
+
+  hs-source-dirs:      src/generators
 
 
 test-suite funcheck-tests
@@ -43,7 +55,7 @@ test-suite funcheck-tests
   ghc-options:         -Wall
   type:                 detailed-0.9
 
-  hs-source-dirs:       core/tests
+  hs-source-dirs:       src/tests
 
   test-module:          FunCheck.Tests
 
@@ -51,7 +63,7 @@ test-suite funcheck-tests
                         FunCheck.Tests.Util
 
 
-  build-depends:        funcheck-core, 
+  build-depends:        funcheck-core, funcheck-generators, 
                         base,
                         containers,
                         charset >=0.3,
