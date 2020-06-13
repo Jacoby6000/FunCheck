@@ -57,7 +57,6 @@ provideMatch t chars = matchAll
   matchAll (PNonCapture p      ) = matchAll p
   matchAll (PNonEmpty   p      ) = matchAll p
 
-
   reducePatternSet :: PatternSet -> String
   reducePatternSet (PatternSet maybeChars maybeClasses maybeCollatingElements maybeEqvClass) =
     maybeFToList maybeChars

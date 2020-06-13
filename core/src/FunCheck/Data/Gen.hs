@@ -62,7 +62,7 @@ randomOutputAlg conf = RegularGrammarAlg
   repeatN' :: (Maybe Int, Maybe Int) -> f a -> f a
   repeatN' range fa =
     let rangeWithDefaults = bimap (fromMaybe minRep) (fromMaybe maxRep) range
-    in  foldl chain' zero =<< (flip replicate fa <$> (state $ randomR rangeWithDefaults))
+    in  foldl chain' zero =<< flip replicate fa <$> state (randomR rangeWithDefaults)
 
   oneOf' :: [f a] -> f a
   oneOf' fas = join (state $ randomPick fas)
